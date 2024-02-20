@@ -5,4 +5,50 @@ date: "2024-02-14"
 output: html_document
 ---
 
-# 
+# Library
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(xml2)
+```
+
+# Data Collection
+
+## Test Scrape 2023
+
+```{r}
+billboard100_2023 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2023"
+
+read_html(billboard100_2023) %>% 
+  xml_find_all("//table[contains(@class,'wikitable')]/tbody/tr[td]") %>% 
+  xml_text() %>% 
+  str_replace_all("\n", "") %>% 
+  str_replace_all("\"", "%") %>% 
+  as_data_frame() %>% 
+  separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
+```
+
+## Scrape All Songs
+
+```{r}
+years <- c(2020:2023) 
+
+get_top_songs <- function(year){
+  url <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
+  
+  df <- read_html(url) %>% 
+  xml_find_all("//table[contains(@class,'wikitable')]/tbody/tr[td]") %>% 
+  xml_text() %>% 
+  str_replace_all("\n", "") %>% 
+  str_replace_all("\"", "%") %>% 
+  as_data_frame() %>% 
+  separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
+  
+  df <- df %>% mutate("year" = year)
+  
+  return(df)
+}
+
+all_top_songs <- map_dfr(years, get_top_songs)
+```
