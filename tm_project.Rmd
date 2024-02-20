@@ -11,6 +11,7 @@ output: html_document
 library(tidyverse)
 library(rvest)
 library(xml2)
+library(geniusr)
 ```
 
 # Data Collection
@@ -32,7 +33,7 @@ read_html(billboard100_2023) %>%
 ## Scrape All Songs
 
 ```{r}
-years <- c(2020:2023) 
+years <- c(2023) 
 
 get_top_songs <- function(year){
   url <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
@@ -51,4 +52,28 @@ get_top_songs <- function(year){
 }
 
 all_top_songs <- map_dfr(years, get_top_songs)
+
+all_top_songs
+```
+
+## Get Lyrics
+
+```{r}
+just_lyrics <- function(artist, song){
+  id <- search_song(paste(song, str_extract(artist, "\\w+")))[1,1] %>% pull()
+  
+  get_lyrics_id(id) %>% 
+    .$line %>% 
+    paste(., collapse= " ")
+}
+
+
+start <- Sys.time()
+all_songs_lyrics <- all_top_songs %>% 
+  mutate(
+    lyrics = mapply(just_lyrics, artists, song_name)
+  )
+stop <- Sys.time()
+
+write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
 ```
