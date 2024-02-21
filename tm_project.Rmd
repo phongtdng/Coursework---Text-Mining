@@ -33,7 +33,7 @@ read_html(billboard100_2023) %>%
 ## Scrape All Songs
 
 ```{r}
-years <- c(2023) 
+years <- c(2019:2023) 
 
 get_top_songs <- function(year){
   url <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
@@ -60,13 +60,12 @@ all_top_songs
 
 ```{r}
 just_lyrics <- function(artist, song){
-  id <- search_song(paste(song, str_extract(artist, "\\w+")))[1,1] %>% pull()
+  id <- search_song(paste(song, str_extract(artist, "\\w+( [A-Z]\\w+)?")))[1,1] %>% pull()
   
   get_lyrics_id(id) %>% 
     .$line %>% 
     paste(., collapse= " ")
 }
-
 
 start <- Sys.time()
 all_songs_lyrics <- all_top_songs %>% 
@@ -77,3 +76,5 @@ stop <- Sys.time()
 
 write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
 ```
+
+It took 31 minutes to scrape so we save the data into a file to avoid scraping every time we commence the project.
