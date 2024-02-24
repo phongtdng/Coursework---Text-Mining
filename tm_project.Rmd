@@ -5,4 +5,76 @@ date: "2024-02-14"
 output: html_document
 ---
 
-# 
+# Library
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(xml2)
+library(geniusr)
+```
+
+# Data Collection
+
+## Test Scrape 2023
+
+```{r}
+billboard100_2023 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2023"
+
+read_html(billboard100_2023) %>% 
+  xml_find_all("//table[contains(@class,'wikitable')]/tbody/tr[td]") %>% 
+  xml_text() %>% 
+  str_replace_all("\n", "") %>% 
+  str_replace_all("\"", "%") %>% 
+  as_data_frame() %>% 
+  separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
+```
+
+## Scrape All Songs
+
+```{r}
+years <- c(2019:2023) 
+
+get_top_songs <- function(year){
+  url <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
+  
+  df <- read_html(url) %>% 
+  xml_find_all("//table[contains(@class,'wikitable')]/tbody/tr[td]") %>% 
+  xml_text() %>% 
+  str_replace_all("\n", "") %>% 
+  str_replace_all("\"", "%") %>% 
+  as_data_frame() %>% 
+  separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
+  
+  df <- df %>% mutate("year" = year)
+  
+  return(df)
+}
+
+all_top_songs <- map_dfr(years, get_top_songs)
+
+all_top_songs
+```
+
+## Get Lyrics
+
+```{r}
+just_lyrics <- function(artist, song){
+  id <- search_song(paste(song, str_extract(artist, "\\w+( [A-Z]\\w+)?")))[1,1] %>% pull()
+  
+  get_lyrics_id(id) %>% 
+    .$line %>% 
+    paste(., collapse= " ")
+}
+
+start <- Sys.time()
+all_songs_lyrics <- all_top_songs %>% 
+  mutate(
+    lyrics = mapply(just_lyrics, artists, song_name)
+  )
+stop <- Sys.time()
+
+write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
+```
+
+It took 31 minutes to scrape so we save the data into a file to avoid scraping every time we commence the project.
