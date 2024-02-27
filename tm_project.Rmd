@@ -78,3 +78,23 @@ write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
 ```
 
 It took 31 minutes to scrape so we save the data into a file to avoid scraping every time we commence the project.
+
+# Data Cleaning
+
+```{r}
+all_songs_lyrics <- read.csv("all_top_songs_lyrics.csv") %>% 
+  drop_na()
+
+wrong_lyrics <- c("Ritmo (Bad Boys for Life)", "My Ex's Best Friend", "Hrs and Hrs")
+
+all_songs_lyrics <- all_songs_lyrics %>% 
+  filter(!song_name %in% wrong_lyrics) 
+```
+
+```{r}
+songs_en <- all_songs_lyrics %>% 
+  mutate(
+    lang = cld3::detect_language(lyrics)
+  ) %>% 
+  filter(lang == "en")
+```
