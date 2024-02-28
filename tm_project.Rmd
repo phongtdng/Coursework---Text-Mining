@@ -173,3 +173,12 @@ ggplot(common_words %>% filter(n > 100)) +
   xlab("frequency") +
   ylab("word")
 ```
+
+## Artists with most postive and negative songs
+
+```{r}
+sa_df %>% 
+  group_by(artists) %>% 
+  count(label = sentiment_label, sort = TRUE) %>% 
+  head(5)
+```
