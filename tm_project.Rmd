@@ -12,6 +12,7 @@ library(tidyverse)
 library(rvest)
 library(xml2)
 library(geniusr)
+library(tidytext)
 ```
 
 # Data Collection
@@ -97,4 +98,33 @@ songs_en <- all_songs_lyrics %>%
     lang = cld3::detect_language(lyrics)
   ) %>% 
   filter(lang == "en")
+```
+
+# Sentiment Analysis
+
+```{r}
+sa_df <- songs_en %>% 
+  unnest_tokens(word, lyrics) %>% 
+  inner_join(get_sentiments("bing")) %>% 
+  group_by(year, song_name) %>% 
+  count(sentiment) %>% 
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
+  mutate(sentiment = positive - negative) %>% 
+  mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
+
+sa_df
+```
+
+## Song sentiment over the years
+
+```{r}
+sa_count <- sa_df %>% 
+  group_by(year, sentiment_label) %>% 
+  count()
+
+#ggalt for smooth lines
+ggplot(sa_count) +
+  ggalt::geom_xspline(aes(year, n, color = sentiment_label)) +
+  xlab("year") +
+  ylab("number of songs")
 ```
