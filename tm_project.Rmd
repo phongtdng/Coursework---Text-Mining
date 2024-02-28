@@ -106,7 +106,7 @@ songs_en <- all_songs_lyrics %>%
 sa_df <- songs_en %>% 
   unnest_tokens(word, lyrics) %>% 
   inner_join(get_sentiments("bing")) %>% 
-  group_by(year, song_name) %>% 
+  group_by(year, song_name, artists) %>% 
   count(sentiment) %>% 
   pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
   mutate(sentiment = positive - negative) %>% 
@@ -127,4 +127,49 @@ ggplot(sa_count) +
   ggalt::geom_xspline(aes(year, n, color = sentiment_label)) +
   xlab("year") +
   ylab("number of songs")
+```
+
+## Most positive vs most negative song
+
+```{r}
+most_pos <- sa_df %>% 
+  group_by(year) %>% 
+  slice_max(sentiment)
+
+most_pos
+```
+
+```{r}
+most_neg <- sa_df %>% 
+  group_by(year) %>% 
+  slice_min(sentiment)
+
+most_neg
+```
+
+```{r}
+ggplot() +
+  geom_col(data = most_pos, aes(year, sentiment), fill = "orange") +
+  geom_col(data = most_neg, aes(year, sentiment), fill = "blue") +
+  coord_flip()
+```
+
+## Most common positive and negative words
+
+```{r}
+common_words <- songs_en %>% 
+  unnest_tokens(word, lyrics) %>% 
+  inner_join(get_sentiments("bing")) %>% 
+  count(word, sentiment, sort = TRUE)
+
+common_words
+```
+
+```{r}
+ggplot(common_words %>% filter(n > 100)) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
 ```
