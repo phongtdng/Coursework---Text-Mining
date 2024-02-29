@@ -16,16 +16,17 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 ```{r}
 #installing packages if needed
 install.packages("tidyverse")
-install.packages("rvest")
-install.packages("xml2")
-remotes::install_github("giovanni-cutri/geniusr")
+install.packages("rvest") #for scraping data from static web pages
+install.packages("xml2") #for reading html files of the web pages
+remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
+install.packages("cld3") #for detecting language
 ```
 
 ```{r}
 library(tidyverse) 
-library(rvest) #for scraping data from static web pages
-library(xml2) #for reading html files of the web pages
-library(geniusr) #api of genius website - contains lyrics and many information about songs and artists
+library(rvest) 
+library(xml2) 
+library(geniusr) 
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -136,6 +137,8 @@ all_songs_lyrics <- all_songs_lyrics %>%
   filter(!song_name %in% wrong_lyrics) 
 ```
 
+The lyrics scraped are not perfect because some searches returned id of a remix of the song or a different language version of the song. Therefore, we have to find and clean them. After going through the lyrics of 500 songs, I found 3 songs with faulty lyrics. I decided to exclude them from the list since at this point I had already reached the limit from Genius API.
+
 ```{r}
 songs_en <- all_songs_lyrics %>% 
   mutate(
@@ -143,3 +146,5 @@ songs_en <- all_songs_lyrics %>%
   ) %>% 
   filter(lang == "en")
 ```
+
+There are 25 songs in other languages than English so we either have to exclude them or translate them into English for the analysis method that we will use in this project. The detection was done by the `cld3` package - a neural network model for language identification. It was mentioned that the version used at the time of this project was still experimental so reproduction might produce different results. Another option to do this task could be using DeepL API. The package `deeplr` is available to facilitate the use of DeepL API and has functions for detecting and translating languages. However, DeepL free API is extremely limited and subscription is expensive. Therefore, for the scope of this project, we will use `cld3` package and exclude songs that are not in English.
