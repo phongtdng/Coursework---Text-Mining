@@ -5,6 +5,12 @@ date: "2024-02-14"
 output: html_document
 ---
 
+# Introduction
+
+Since the incident of COVID-19, the daily life of many people has changed, along with this is an increase in mental health issue and a reduction in ability to cope with emotional challenges (search for evidence later). One device that is arguably important to emotional well being is music. Thus, people's choice of music is telling of how they feel about their emotional life as well as their perception of the current world.
+
+In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of a large community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large chunk of the music community (stats?).
+
 # Library
 
 ```{r}
