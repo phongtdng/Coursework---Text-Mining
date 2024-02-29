@@ -14,10 +14,10 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # Library
 
 ```{r}
-library(tidyverse)
-library(rvest)
-library(xml2)
-library(geniusr)
+library(tidyverse) 
+library(rvest) #for scraping data from static web pages
+library(xml2) #for reading html files of the web pages
+library(geniusr) #api of genius website - contains lyrics and many information about songs and artists
 ```
 
 # Data Collection
