@@ -14,11 +14,21 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # Library
 
 ```{r}
+#installing packages if needed
+install.packages("tidyverse")
+install.packages("rvest")
+install.packages("xml2")
+remotes::install_github("giovanni-cutri/geniusr")
+```
+
+```{r}
 library(tidyverse) 
 library(rvest) #for scraping data from static web pages
 library(xml2) #for reading html files of the web pages
 library(geniusr) #api of genius website - contains lyrics and many information about songs and artists
 ```
+
+Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
 
 # Data Collection
 
