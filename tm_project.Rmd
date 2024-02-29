@@ -5,23 +5,45 @@ date: "2024-02-14"
 output: html_document
 ---
 
+# Introduction
+
+Since the incident of COVID-19, the daily life of many people has changed, along with this is an increase in mental health issue and a reduction in ability to cope with emotional challenges (search for evidence later). One device that is arguably important to emotional well being is music. Thus, people's choice of music is telling of how they feel about their emotional life as well as their perception of the current world.
+
+In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of a large community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large chunk of the music community (stats?).
+
 # Library
 
 ```{r}
-library(tidyverse)
-library(rvest)
-library(xml2)
-library(geniusr)
+#installing packages if needed
+install.packages("tidyverse")
+install.packages("rvest") #for scraping data from static web pages
+install.packages("xml2") #for reading html files of the web pages
+remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
+install.packages("cld3") #for detecting language
+install.packages("tidytext")
+```
+
+```{r}
+library(tidyverse) 
+library(rvest) 
+library(xml2) 
+library(geniusr) 
 library(tidytext)
 ```
 
+Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
+
 # Data Collection
+
+The Billboard Year End Hot 100 singles compiles the top performing singles of the United States based on both physical and digital sales. Although the charts are posted on the website of Billboard, in this analysis, we are getting the data from Wikipedia since it has a much better format for scraping the data and it is open-source. We begin the data collection process by making a test scrape for the year 2023.
 
 ## Test Scrape 2023
 
 ```{r}
+#url of wikipedia page for top songs 2023
 billboard100_2023 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2023"
 
+#check and clean scraped data and put into a readable format (dataframe)
 read_html(billboard100_2023) %>% 
   xml_find_all("//table[contains(@class,'wikitable')]/tbody/tr[td]") %>% 
   xml_text() %>% 
@@ -31,14 +53,19 @@ read_html(billboard100_2023) %>%
   separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
 ```
 
+The table containing the information that we need is a unique `<table>` element with the `class = 'wikitable'` and all the pages for other years have the same format so we can use the same syntax to scrape songs from all the years that we are interested in.
+
 ## Scrape All Songs
 
 ```{r}
+#interested years
 years <- c(2019:2023) 
 
+#helper function to streamline the scraping process
 get_top_songs <- function(year){
   url <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
   
+  #save the scraped and cleaned data into a dataframe like previously
   df <- read_html(url) %>% 
   xml_find_all("//table[contains(@class,'wikitable')]/tbody/tr[td]") %>% 
   xml_text() %>% 
@@ -47,38 +74,58 @@ get_top_songs <- function(year){
   as_data_frame() %>% 
   separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
   
-  df <- df %>% mutate("year" = year)
+  df <- df %>% mutate("year" = year) #add a year column
   
   return(df)
 }
 
+#applying the helper function to a vector and returning a dataframe
 all_top_songs <- map_dfr(years, get_top_songs)
 
 all_top_songs
 ```
 
+The final data frame has 500 rows, which is in accordant to 5 charts of the 5 years period (2019-2023) so the scraping should have gone correctly. The next step will be to get the lyrics for these songs in order to create a complete data frame. We will use Genius API to get the songs' information and lyrics. We will use the library `geniusr` which facilitates the use of Genius API.
+
+**Important**: To reproduce this report using `geniusr` package, it is important to follow these steps from the guide of the package:
+
+1.  [Create a Genius API client](https://genius.com/api-clients/new)
+2.  Generate a client access token from the [API Clients Page](https://genius.com/api-clients)
+3.  Calling `genius_token()` and enter your Genius Client Access Token
+
+The full guide to the `geniusr` package is on this [GitHub page](https://github.com/ewenme/geniusr?tab=readme-ov-file)
+
 ## Get Lyrics
 
 ```{r}
+genius_token() #call and enter Client Access Token to authenticate to use Genius API 
+```
+
+```{r}
+#helper function to get lyrics of a song
 just_lyrics <- function(artist, song){
+  #search for id of song based on song name and name of first artist
   id <- search_song(paste(song, str_extract(artist, "\\w+( [A-Z]\\w+)?")))[1,1] %>% pull()
   
+  #get lyrics based on id
   get_lyrics_id(id) %>% 
     .$line %>% 
     paste(., collapse= " ")
 }
 
-start <- Sys.time()
+#add lyrics column to the data frame of songs from before
 all_songs_lyrics <- all_top_songs %>% 
   mutate(
     lyrics = mapply(just_lyrics, artists, song_name)
   )
-stop <- Sys.time()
 
+#save the complete data frame into a csv file for easy retrival for analysis later
 write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
 ```
 
-It took 31 minutes to scrape so we save the data into a file to avoid scraping every time we commence the project.
+One way to get lyrics of a song using the `geniusr` package is to use the function `get_lyrics_id()` with a singular parameter `id` . This `id` can be retrieved by using the function `search_song` and the resulting table's first cell ([1,1]) is the id of the song. We built a helper function to facilitate the lyrics retrieval.
+
+It took 31 minutes to scrape all the lyrics for the 500 songs so we will save the data into a csv file to avoid scraping every time we perform analysis. *This might make the reproduction of the analysis faulty to changes added after the publish date of the project.*
 
 # Data Cleaning
 
@@ -92,6 +139,8 @@ all_songs_lyrics <- all_songs_lyrics %>%
   filter(!song_name %in% wrong_lyrics) 
 ```
 
+The lyrics scraped are not perfect because some searches returned id of a remix of the song or a different language version of the song. Therefore, we have to find and clean them. After going through the lyrics of 500 songs, I found 3 songs with faulty lyrics. I decided to exclude them from the list since at this point I had already reached the limit from Genius API.
+
 ```{r}
 songs_en <- all_songs_lyrics %>% 
   mutate(
@@ -99,6 +148,8 @@ songs_en <- all_songs_lyrics %>%
   ) %>% 
   filter(lang == "en")
 ```
+
+There are 25 songs in other languages than English so we either have to exclude them or translate them into English for the analysis method that we will use in this project. The detection was done by the `cld3` package - a neural network model for language identification. It was mentioned that the version used at the time of this project was still experimental so reproduction might produce different results. Another option to do this task could be using DeepL API. The package `deeplr` is available to facilitate the use of DeepL API and has functions for detecting and translating languages. However, DeepL free API is extremely limited and subscription is expensive. Therefore, for the scope of this project, we will use `cld3` package and exclude songs that are not in English.
 
 # Sentiment Analysis
 
