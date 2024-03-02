@@ -151,11 +151,26 @@ songs_en <- all_songs_lyrics %>%
 
 There are 25 songs in other languages than English so we either have to exclude them or translate them into English for the analysis method that we will use in this project. The detection was done by the `cld3` package - a neural network model for language identification. It was mentioned that the version used at the time of this project was still experimental so reproduction might produce different results. Another option to do this task could be using DeepL API. The package `deeplr` is available to facilitate the use of DeepL API and has functions for detecting and translating languages. However, DeepL free API is extremely limited and subscription is expensive. Therefore, for the scope of this project, we will use `cld3` package and exclude songs that are not in English.
 
+# Split and Tokenize
+
+```{r}
+songs_en <- songs_en %>% 
+  unnest_tokens(word, lyrics)
+```
+
+# Filter Stop Words
+
+```{r}
+songs_en <- songs_en %>% 
+  anti_join(stop_words)
+
+songs_en
+```
+
 # Sentiment Analysis
 
 ```{r}
-sa_df <- songs_en %>% 
-  unnest_tokens(word, lyrics) %>% 
+sa_df_bing <- songs_en %>% 
   inner_join(get_sentiments("bing")) %>% 
   group_by(year, song_name, artists) %>% 
   count(sentiment) %>% 
@@ -163,21 +178,39 @@ sa_df <- songs_en %>%
   mutate(sentiment = positive - negative) %>% 
   mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
 
-sa_df
+sa_df_bing
+```
+
+```{r}
+sa_df_afinn <- songs_en %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(year, song_name, artists) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
+
+sa_df_afinn
 ```
 
 ## Song sentiment over the years
 
 ```{r}
-sa_count <- sa_df %>% 
+sa_df_bing %>% 
   group_by(year, sentiment_label) %>% 
-  count()
+  count() %>% 
+  ggplot() +
+    ggalt::geom_xspline(aes(year, n, color = sentiment_label)) + #ggalt for smooth lines
+    xlab("year") +
+    ylab("number of songs")
+```
 
-#ggalt for smooth lines
-ggplot(sa_count) +
-  ggalt::geom_xspline(aes(year, n, color = sentiment_label)) +
-  xlab("year") +
-  ylab("number of songs")
+```{r}
+sa_df_afinn %>% 
+  group_by(year, sentiment_label) %>% 
+  count() %>% 
+  ggplot() +
+    ggalt::geom_xspline(aes(year, n, color = sentiment_label)) +
+    xlab("year") +
+    ylab("number of songs")
 ```
 
 ## Most positive vs most negative song
