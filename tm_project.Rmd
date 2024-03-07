@@ -161,16 +161,16 @@ songs_en <- songs_en %>%
 # Filter Stop Words
 
 ```{r}
-songs_en <- songs_en %>% 
+songs_en_filtered <- songs_en %>% 
   anti_join(stop_words)
 
-songs_en
+songs_en_filtered
 ```
 
 # Sentiment Analysis
 
 ```{r}
-sa_df_bing <- songs_en %>% 
+sa_df_bing <- songs_en_filtered %>% 
   inner_join(get_sentiments("bing")) %>% 
   group_by(year, song_name, artists) %>% 
   count(sentiment) %>% 
@@ -182,7 +182,7 @@ sa_df_bing
 ```
 
 ```{r}
-sa_df_afinn <- songs_en %>% 
+sa_df_afinn <- songs_en_filtered %>% 
   inner_join(get_sentiments("afinn")) %>% 
   group_by(year, song_name, artists) %>% 
   summarise(sentiment = sum(value)) %>% 
@@ -213,7 +213,7 @@ oty %>%
 ## Most common positive and negative words
 
 ```{r}
-common_words_bing <- songs_en %>%
+common_words_bing <- songs_en_filtered %>%
   inner_join(get_sentiments("bing")) %>% 
   count(word, sentiment, sort = TRUE)
 
@@ -226,7 +226,7 @@ ggplot(common_words_bing %>% filter(n > 50)) +
 ```
 
 ```{r}
-common_words_afinn <- songs_en %>%
+common_words_afinn <- songs_en_filtered %>%
   inner_join(get_sentiments("afinn")) %>% 
   count(word, value, sort = TRUE) %>% 
   mutate(sentiment = case_when(
@@ -305,3 +305,5 @@ artists_sa %>% ggplot() +
   xlab("Top artists") +
   ylab("number of songs")
 ```
+
+# Term Frequency
