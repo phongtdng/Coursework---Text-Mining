@@ -20,6 +20,7 @@ install.packages("rvest") #for scraping data from static web pages
 install.packages("xml2") #for reading html files of the web pages
 remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
 install.packages("cld3") #for detecting language
+install.packages("tidytext")
 ```
 
 ```{r}
@@ -27,6 +28,7 @@ library(tidyverse)
 library(rvest) 
 library(xml2) 
 library(geniusr) 
+library(tidytext)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -148,3 +150,158 @@ songs_en <- all_songs_lyrics %>%
 ```
 
 There are 25 songs in other languages than English so we either have to exclude them or translate them into English for the analysis method that we will use in this project. The detection was done by the `cld3` package - a neural network model for language identification. It was mentioned that the version used at the time of this project was still experimental so reproduction might produce different results. Another option to do this task could be using DeepL API. The package `deeplr` is available to facilitate the use of DeepL API and has functions for detecting and translating languages. However, DeepL free API is extremely limited and subscription is expensive. Therefore, for the scope of this project, we will use `cld3` package and exclude songs that are not in English.
+
+# Split and Tokenize
+
+```{r}
+songs_en <- songs_en %>% 
+  unnest_tokens(word, lyrics)
+```
+
+# Filter Stop Words
+
+```{r}
+songs_en <- songs_en %>% 
+  anti_join(stop_words)
+
+songs_en
+```
+
+# Sentiment Analysis
+
+```{r}
+sa_df_bing <- songs_en %>% 
+  inner_join(get_sentiments("bing")) %>% 
+  group_by(year, song_name, artists) %>% 
+  count(sentiment) %>% 
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
+  mutate(sentiment = positive - negative) %>% 
+  mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
+
+sa_df_bing
+```
+
+```{r}
+sa_df_afinn <- songs_en %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(year, song_name, artists) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
+
+sa_df_afinn
+```
+
+## Song sentiment over the years
+
+```{r}
+#combine afinn and bing data set to compare song sentiment over the years
+oty <- bind_rows(
+  sa_df_afinn %>% mutate(method = "afinn"),
+  sa_df_bing %>% select(-negative, -positive) %>% mutate(method = "bing")
+)
+
+oty %>% 
+  group_by(method, year, sentiment_label) %>% 
+  count() %>% 
+  ggplot() +
+  ggalt::geom_xspline(aes(year, n, color = sentiment_label)) + #geom_xspline for smooth line
+  xlab("year") +
+  ylab("number of songs") +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+## Most common positive and negative words
+
+```{r}
+common_words_bing <- songs_en %>%
+  inner_join(get_sentiments("bing")) %>% 
+  count(word, sentiment, sort = TRUE)
+
+ggplot(common_words_bing %>% filter(n > 50)) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+```{r}
+common_words_afinn <- songs_en %>%
+  inner_join(get_sentiments("afinn")) %>% 
+  count(word, value, sort = TRUE) %>% 
+  mutate(sentiment = case_when(
+    value < 0 ~ "negative",
+    value > 0 ~ "positive",
+    TRUE ~ "neutral"
+  ))
+
+ggplot(common_words_afinn %>% filter(n > 50)) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+## Most positive vs most negative song
+
+```{r}
+most_pos <- sa_df_afinn %>% 
+  group_by(year) %>% 
+  slice_max(sentiment)
+
+most_pos
+```
+
+```{r}
+most_neg <- sa_df_afinn %>% 
+  group_by(year) %>% 
+  slice_min(sentiment)
+
+most_neg
+```
+
+```{r}
+ggplot() +
+  geom_col(data = most_pos, aes(year, sentiment), fill = "orange") +
+  geom_col(data = most_neg, aes(year, sentiment), fill = "blue") +
+  coord_flip() +
+  geom_text(data = most_pos, aes(x = year, y = 0, label = song_name), 
+            hjust = "left", nudge_y = 5) +
+  geom_text(data = most_neg, aes(x = year, y = 0, label = song_name), 
+            hjust = "right", nudge_y = -5)
+```
+
+## Top Artists
+
+```{r}
+sa_df_afinn %>% 
+  group_by(artists) %>% 
+  count(label = sentiment_label, sort = TRUE) %>% 
+  head(10)
+```
+
+```{r}
+sa_df_bing %>% 
+  group_by(artists) %>% 
+  count(label = sentiment_label, sort = TRUE) %>% 
+  head(10)
+```
+
+```{r}
+artists_sa <- bind_rows(
+  sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
+  sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
+) %>%
+  group_by(method, artists) %>% 
+  mutate(total_songs = sum(n)) %>% 
+  group_by(method) %>% 
+  slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
+  
+artists_sa %>% ggplot() +
+  geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
+  coord_flip() +
+  facet_wrap(~method, scales = "free_y") +
+  xlab("Top artists") +
+  ylab("number of songs")
+```
