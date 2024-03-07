@@ -307,3 +307,9 @@ artists_sa %>% ggplot() +
 ```
 
 # Term Frequency
+
+## Most often used words
+
+## Zipf's Law
+
+## TF-IDF
