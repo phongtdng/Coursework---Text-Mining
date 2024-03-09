@@ -310,6 +310,69 @@ artists_sa %>% ggplot() +
 
 ## Most often used words
 
-## Zipf's Law
+```{r}
+song_words <- songs_en %>% 
+  count(position, year, song_name, word, sort = TRUE) %>% 
+  group_by(song_name) %>% 
+  mutate(total_words = sum(n),
+         term_freq = n/total_words,
+         position_level = ifelse(position <= 10, "Top 10", "Top 100")) 
+song_words
+```
 
-## TF-IDF
+```{r}
+#word count distribution
+ggplot(song_words) +
+  geom_histogram(aes(total_words, fill = position_level)) +
+  xlab("Total word count per song") +
+  ylab("Frequency")
+```
+
+```{r}
+ggplot(song_words, aes(term_freq)) +
+  geom_histogram() +
+  xlim(0, 0.15)
+```
+
+```{r}
+ggplot(song_words, aes(term_freq)) +
+  geom_histogram(show.legend = FALSE) +
+  xlim(0, 0.05) + 
+  facet_wrap(~year, scales = "free_y")
+```
+
+It's possible after COVID-19 and the quarantine period, new words came out so there are more variation in 2022 and 2023.
+
+## Wordiest songs
+
+```{r}
+
+```
+
+## Songs with most distinctive and characteristic words
+
+```{r}
+songs_tf_idf <- song_words %>% 
+  bind_tf_idf(word, song_name, n) %>% 
+  group_by(song_name) %>% 
+  mutate(total_tf_idf = sum(tf_idf)) %>% 
+  arrange(desc(total_tf_idf)) %>% 
+  ungroup()
+
+songs_tf_idf 
+```
+
+## Distinctive and characteristic words by year
+
+```{r}
+songs_tf_idf %>% 
+  group_by(year) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(tf_idf, reorder(word, tf_idf))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~year, scale = "free") +
+  labs(x = "tf-idf", y = NULL)
+```
+
+## Comparing Top 10 songs vs the rest
