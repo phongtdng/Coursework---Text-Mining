@@ -21,6 +21,7 @@ install.packages("xml2") #for reading html files of the web pages
 remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
 install.packages("cld3") #for detecting language
 install.packages("tidytext")
+install.packages("hunspell") #detecting misspelling
 ```
 
 ```{r}
@@ -29,6 +30,7 @@ library(rvest)
 library(xml2) 
 library(geniusr) 
 library(tidytext)
+library(hunspell)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -158,10 +160,37 @@ songs_en_st <- songs_en %>%
   unnest_tokens(word, lyrics)
 ```
 
+```{r}
+misspelling_dict <- songs_en_st %>% 
+  select(word) %>% 
+  distinct() %>% 
+  mutate(misspelling = hunspell_check(word)) %>% 
+  filter(misspelling == FALSE) %>% 
+  #important misspelling are verb-ing words so we will correct by adding g at the end of word
+  mutate(ing_word = str_detect(word, pattern = "\\w+in$")) %>% 
+  filter(ing_word == TRUE) %>% 
+  mutate(correction = paste0(word, "g")) %>% 
+  #double check again to include only words correctly corrected
+  mutate(misspelling_2 = hunspell_check(correction)) %>% 
+  filter(misspelling_2) %>% 
+  select(word, correction)
+misspelling_dict
+```
+
+```{r}
+songs_cleaned <- songs_en_st %>% 
+  left_join(misspelling_dict, by = join_by(word)) %>% 
+  mutate(correct_word = ifelse(is.na(correction), word, correction)) %>% 
+  select(-word, -correction) %>% 
+  rename(word = correct_word)
+
+songs_cleaned
+```
+
 # Filter Stop Words
 
 ```{r}
-songs_en_filtered <- songs_en_st %>% 
+songs_en_filtered <- songs_cleaned %>% 
   anti_join(stop_words)
 
 songs_en_filtered
@@ -311,7 +340,7 @@ artists_sa %>% ggplot() +
 ## Most often used words
 
 ```{r}
-song_words <- songs_en_st %>% 
+song_words <- songs_cleaned %>% 
   count(position, year, song_name, word, sort = TRUE) %>% 
   group_by(year, song_name) %>% 
   mutate(total_words = sum(n),
