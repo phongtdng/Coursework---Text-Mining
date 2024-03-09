@@ -21,6 +21,7 @@ install.packages("xml2") #for reading html files of the web pages
 remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
 install.packages("cld3") #for detecting language
 install.packages("tidytext")
+install.packages("hunspell") #detecting misspelling
 ```
 
 ```{r}
@@ -29,6 +30,7 @@ library(rvest)
 library(xml2) 
 library(geniusr) 
 library(tidytext)
+library(hunspell)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -156,6 +158,23 @@ There are 25 songs in other languages than English so we either have to exclude 
 ```{r}
 songs_en_st <- songs_en %>% 
   unnest_tokens(word, lyrics)
+```
+
+```{r}
+misspelling_dict <- songs_en_st %>% 
+  select(word) %>% 
+  distinct() %>% 
+  mutate(misspelling = hunspell_check(word)) %>% 
+  filter(misspelling == FALSE) %>% 
+  #important misspelling are verb-ing words so we will correct by adding g at the end of word
+  mutate(ing_word = str_detect(word, pattern = "\\w+in$")) %>% 
+  filter(ing_word == TRUE) %>% 
+  mutate(correction = paste0(word, "g")) %>% 
+  #double check again to include only words correctly corrected
+  mutate(misspelling_2 = hunspell_check(correction)) %>% 
+  filter(misspelling_2) %>% 
+  select(word, correction)
+misspelling_dict
 ```
 
 # Filter Stop Words
