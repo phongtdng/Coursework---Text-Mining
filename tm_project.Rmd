@@ -160,6 +160,8 @@ songs_en_st <- songs_en %>%
   unnest_tokens(word, lyrics)
 ```
 
+As per usual with most case of analysing songs of pop culture, there are many potential issues for the analysis with the word used in these songs. In our case, there are many slang words that are not recorded in the dictionary and words that are sang differently for the purpose of rhyming or simply style. Some examples of these words are "nothing" becoming "nothin", "fighting" becoming "fightin", and so on. We will try to clean these as much as possible but it is frankly very messy to handle. There are packages that can help correcting the misspelling (e.g., `textclean`, `hunspell`) but these are usually not accurate for slang and words from pop culture. Stemming and lemmatization can help but at the same time might take away valuable information or incorrectly stem or lemmatize (for example, some packages reduce "is" to "i" or give errors to slang and words related to pop or internet cluture).
+
 ```{r}
 misspelling_dict <- songs_en_st %>% 
   select(word) %>% 
@@ -177,6 +179,8 @@ misspelling_dict <- songs_en_st %>%
 misspelling_dict
 ```
 
+We will create a dictionary for misspelled words from the songs' lyrics of the data set. We will use the `hunspell` package for identifying the misspelling. Most of the identified misspelled words are either verbs ending in "ing" (present participle or gerund) and names or words from other languages or slang. Since names and pop culture words contribute meaning to the song and are not entirely affected by the analysis, we will only correct the verb-ing words so later they can be identified by the lexicons. This was done by detecting misspelled words ending with "in" then adding "g" to the of the word. They are checked again by the `hunspell_check` to filter out other words that also end with "in" but are not verb-ings.
+
 ```{r}
 songs_cleaned <- songs_en_st %>% 
   left_join(misspelling_dict, by = join_by(word)) %>% 
@@ -186,6 +190,8 @@ songs_cleaned <- songs_en_st %>%
 
 songs_cleaned
 ```
+
+We prepare the final, cleaned version of the data set by joining the misspelling dictionary data frame with the original data frame then create a new column that takes the correction form of misspelled words and original form if they are not in the dictionary.
 
 # Filter Stop Words
 
