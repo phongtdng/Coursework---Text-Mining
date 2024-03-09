@@ -154,14 +154,14 @@ There are 25 songs in other languages than English so we either have to exclude 
 # Split and Tokenize
 
 ```{r}
-songs_en <- songs_en %>% 
+songs_en_st <- songs_en %>% 
   unnest_tokens(word, lyrics)
 ```
 
 # Filter Stop Words
 
 ```{r}
-songs_en_filtered <- songs_en %>% 
+songs_en_filtered <- songs_en_st %>% 
   anti_join(stop_words)
 
 songs_en_filtered
@@ -311,7 +311,7 @@ artists_sa %>% ggplot() +
 ## Most often used words
 
 ```{r}
-song_words <- songs_en %>% 
+song_words <- songs_en_st %>% 
   count(position, year, song_name, word, sort = TRUE) %>% 
   group_by(year, song_name) %>% 
   mutate(total_words = sum(n),
