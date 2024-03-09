@@ -177,10 +177,20 @@ misspelling_dict <- songs_en_st %>%
 misspelling_dict
 ```
 
+```{r}
+songs_cleaned <- songs_en_st %>% 
+  left_join(misspelling_dict, by = join_by(word)) %>% 
+  mutate(correct_word = ifelse(is.na(correction), word, correction)) %>% 
+  select(-word, -correction) %>% 
+  rename(word = correct_word)
+
+songs_cleaned
+```
+
 # Filter Stop Words
 
 ```{r}
-songs_en_filtered <- songs_en_st %>% 
+songs_en_filtered <- songs_cleaned %>% 
   anti_join(stop_words)
 
 songs_en_filtered
@@ -330,7 +340,7 @@ artists_sa %>% ggplot() +
 ## Most often used words
 
 ```{r}
-song_words <- songs_en_st %>% 
+song_words <- songs_cleaned %>% 
   count(position, year, song_name, word, sort = TRUE) %>% 
   group_by(year, song_name) %>% 
   mutate(total_words = sum(n),
