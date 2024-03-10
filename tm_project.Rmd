@@ -22,6 +22,7 @@ remotes::install_github("giovanni-cutri/geniusr") #api of genius website - conta
 install.packages("cld3") #for detecting language
 install.packages("tidytext")
 install.packages("hunspell") #detecting misspelling
+install.packages("ggpubr") #combining ggplots into 1
 ```
 
 ```{r}
@@ -31,6 +32,7 @@ library(xml2)
 library(geniusr) 
 library(tidytext)
 library(hunspell)
+library(ggpubr)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -202,7 +204,9 @@ songs_en_filtered <- songs_cleaned %>%
 songs_en_filtered
 ```
 
-# Sentiment Analysis
+# Lexicon-based Sentiment Analysis 
+
+In the following section, we will explore the sentimental themes of the popular songs from 2019 to 2023 to uncover insights about music listeners, as least for the pop culture, and how they relate or reflect the phenomena happening during these years. Since the uneventful arrival of COVID-19, there was a range of emotions displayed on social media, news, and public opinion sharing platforms. The pandemic claimed many lives and forced most countries into isolating people, thus, we could expect a rise in more negative songs about loneliness or sadness. It is also possible that songs about courage and felicity will rise instead as people try to cope by listening to positive songs.
 
 ```{r}
 sa_df_bing <- songs_en_filtered %>% 
@@ -213,7 +217,7 @@ sa_df_bing <- songs_en_filtered %>%
   mutate(sentiment = positive - negative) %>% 
   mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
 
-sa_df_bing
+sa_df_bing$sentiment %>% summary()
 ```
 
 ```{r}
@@ -223,7 +227,20 @@ sa_df_afinn <- songs_en_filtered %>%
   summarise(sentiment = sum(value)) %>% 
   mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
 
-sa_df_afinn
+sa_df_afinn$sentiment %>% summary()
+```
+
+We are using 2 lexicons "bing" and "afinn" to measure the sentiments of words of the songs. With "bing", a song is classified as "positive" if the net value of positive words subtracting negative words is greater than 0 (positive - negative \> 0), "negative" if it is below 0 (positive - negative \< 0), and "neutral" otherwise (positive - negative = 0). With "afinn", this sentiment label is categorized by the sum sentimental values of words with the same criteria for "bing".
+
+A brief descriptive analysis on the sentiment attribute shows that more than half of the songs carry negative connotation in their lyrics with means of -8.3 and -16.8 and medians of -6 and -5 for "bing" and "afinn" repsectively. It also shows that the negative notation has a peaked value almost double the positive (-83 compared to 42 for "bing" and -325 compared to 163 for "afinn"). This means that the song with the highest negative connotation has almost double the amount of negative words or negativity than the top positive song. We can see this more clearly with the box-plots below.
+
+```{r}
+#box-plot for sentiment column
+ggarrange(
+  ggplot(sa_df_bing) + geom_boxplot(aes(y = sentiment)),
+  ggplot(sa_df_afinn) + geom_boxplot(aes(y = sentiment)),
+  labels = c("bing", "afinn")
+)
 ```
 
 ## Song sentiment over the years
