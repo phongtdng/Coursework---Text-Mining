@@ -262,6 +262,10 @@ oty %>%
   facet_wrap(~method, ncol = 1, scales = "free_y")
 ```
 
+Although the 2 lexicons give different results on the overall sentiment of songs, they both seem to be in accordance on the rise and fall of negative and positive songs after 2020. In 2021, the number of negative songs rose while the number of negative songs plummeted. This trend, however, reserved from 2021 to 2023, where negative songs start to ascend and the positive songs went down in number. From 2019 to 2020, it seems that using "bing" gives us a fall in negative songs and an increase in positive songs but with "afinn" this pattern is inverted. Despite the difference in trend, the increase or decrease are relatively small for both graphs. Both also agree on the little number of neutral songs, which is perfectly normal for music since songs tend to express a lot of emotions.
+
+It is difficult to determine whether our initial or second hypothesis about the music listening trend during the pandemic was correct since the 2 lexicons produced different results for the period 2019 to 2020. The number of negative songs outweighed the number of positive songs but it is unclear whether it is a perpetual trend with pop culture or a singular phenomena within this period. However, the trend after 2020 tells a much clearer story. The COVID-19 pandemic started around December 2019 and began to spread worldwide in early 2020. Following this pandemic was a series of lock down in populated cities and was lifted after mid 2021 for the majority of places. The end of the quarantine allowed reunion between loved ones and represented a signal of the waned sign of COVID-19. Thus, this gave rise to celebration and positive sentiments, which seem to be reflected accordingly in the graphs. The graphs then show a surge of popularity of negative songs in 2022 and 2023. This could reflect the series of misfortune events that happened such as the war in Ukraine, the sharp rise of inflation, and various droughts and floods in many regions.
+
 ## Most common positive and negative words
 
 ```{r}
