@@ -14,15 +14,15 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # Library
 
 ```{r}
-#installing packages if needed
-install.packages("tidyverse")
-install.packages("rvest") #for scraping data from static web pages
-install.packages("xml2") #for reading html files of the web pages
-remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
-install.packages("cld3") #for detecting language
-install.packages("tidytext")
-install.packages("hunspell") #detecting misspelling
-install.packages("ggpubr") #combining ggplots into 1
+# #installing packages if needed
+# install.packages("tidyverse")
+# install.packages("rvest") #for scraping data from static web pages
+# install.packages("xml2") #for reading html files of the web pages
+# remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
+# install.packages("cld3") #for detecting language
+# install.packages("tidytext")
+# install.packages("hunspell") #detecting misspelling
+# install.packages("ggpubr") #combining ggplots into 1
 ```
 
 ```{r}
@@ -268,7 +268,7 @@ It is difficult to determine whether our initial or second hypothesis about the 
 
 ## Most common positive and negative words
 
-We learned before that some songs could be extremely negative while very positive songs do not contain as many positive words. There also seems to be a permanent trend of pop culture in that negative songs dominate in number in the charts in all years. We will explore more the vocabulary used in the songs to understand more why these phenomena.
+We learned before that some songs could be extremely negative while very positive songs do not contain as many positive words. There also seems to be a permanent trend of pop culture in that negative songs dominate in number in the charts in all years. We will explore more the vocabulary used in the songs to understand more why these phenomena happen.
 
 ```{r}
 common_words_bing <- songs_en_filtered %>%
@@ -324,7 +324,7 @@ ggplot(common_words_by_year_bing %>% filter(n> 30)) +
   ylab("word")
 ```
 
-Looking by the year, it seems that there are some evidence supporting our earlier hypothesis. In 2020 and 2021, "lonely" and "miss" are in the top common words used in these popular songs. This could suggest that the pandemic and the lock down produced some nostalgic effect for people. Some words like "love", "shit", "bitch", "fuck" seem to be time-less, in that they appear in all years. It is also interesting that in 2019 and 2020, usage of sentimental words seemed to spread out more while from 2021 to 2023, and especially in 2022, certain words are overly repeated. Finally, although using "afinn" gives longer list of top words, their pattern are similar to using "bing". The results of using lexicon affin are displayed below.
+Looking by the year, it seems that there are some evidence supporting our earlier hypothesis. In 2020 and 2021, "lonely" and "miss" are in the top common words used in these popular songs. This could suggest that the pandemic and the lock down produced some nostalgic effect for people. Some words like "love", "shit", "bitch", "fuck" seem to be time-less, in that they appear in all years. It is also interesting that in 2019 and 2020, usage of sentimental words seemed to spread out more while from 2021 to 2023, and especially in 2022, certain words are overly repeated. Perhaps, 2022 was not a very creative year in song writing. Finally, although using "afinn" gives longer list of top words, their pattern are similar to using "bing". The results of using lexicon affin are displayed below.
 
 ```{r}
 common_words_by_year_afinn <- songs_en_filtered %>%
@@ -344,25 +344,20 @@ ggplot(common_words_by_year_afinn %>% filter(n> 30)) +
   ylab("word")
 ```
 
-## Most positive vs most negative song
+## Most positive vs most negative songs
 
 ```{r}
+#most positive songs from each year
 most_pos <- sa_df_afinn %>% 
   group_by(year) %>% 
   slice_max(sentiment)
 
-most_pos
-```
-
-```{r}
+#most negative songs from each year
 most_neg <- sa_df_afinn %>% 
   group_by(year) %>% 
   slice_min(sentiment)
 
-most_neg
-```
-
-```{r}
+#visualise
 ggplot() +
   geom_col(data = most_pos, aes(year, sentiment), fill = "orange") +
   geom_col(data = most_neg, aes(year, sentiment), fill = "blue") +
@@ -372,6 +367,44 @@ ggplot() +
   geom_text(data = most_neg, aes(x = year, y = 0, label = song_name), 
             hjust = "right", nudge_y = -5)
 ```
+
+We have seen from the previous section the most common positive and negative words throughout 2019 to 2023 and also in each year. We will now look into the songs with the highest positive and negative net scores to see the development of emotional ranges in this time period. Like we saw in the beginning, the top most negative song had a much higher score than the most positive song. We can see that it applies for almost all of the years with the exception of 2020 where both songs have similar scores. The peak of positivity seems to dwindle after 2020 while for negativity it fluctuates. We can look into the lyrics of these songs to paint a clearer picture of the story they might be telling.
+
+```{r}
+songs_en_filtered %>% 
+  filter(song_name %in% most_pos$song_name) %>% 
+  group_by(song_name) %>% 
+  count(word) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(word, n))) +
+  geom_col() +
+  facet_wrap(~song_name, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+From looking at the top most frequent words of these songs, it seems that some common themes are love ("Flowers" and "Lose You to Love Me") and beauty ("Beautiful" and "Way 2 Sexy"). "To the Moon" seems to have more of catchy, positive sounds like "yeah" and "ha" without a clear story.
+
+Love is a compelling theme for powerful sentiments, it can be either really positive but also really negative. "Flowers" carries a lot of nostalgic notions with words like "remembered", "wanna", and seems to have a vivid story with action words like "cry", "write", "talk", "dancing", "leave", "hold" and "hands", coupled with nouns like "sand", "hours", "flowers". The whole lyrics of song portray clearly an overcome of a sad past romance and a new focus on self-love so it makes sense that the song has a positive net score of sentiment. "Lose You to Love Me", on the other hand, seems to have gotten a high score on positiveness due to high frequency of the word "love" and "yeah". From the name of the song and words like "promised", "fell", and "adored" being used in past tense make a clear story of moving on from a past loving relationship. However, other top appearing words like "hate", "burn", "killing, and "fires" could suggest a less positive overall sentiment that was compensated by high frequency of the positive score of "love" and "yeah". To further understand the stories of the songs, we would need to analyse pairs and groups of words, which will be detailed in later sections.
+
+"Beautiful" and "Way 2 Sexy" are also in the same theme but seem to differ in their message. "Beautiful" seems to convey a clearer positivity with use of words such as "angel", "amazing", coupling with words like "naked" and "imperfections", which probably talks about beauty despite flaws. "Way 2 Sexy", however, seems to have gotten a high score on positiveness due to repeated use of words like "sexy", "yeah", and "woah". The rest of the top words seem to talk about "fame", money ("cash"), and convey a more materialistic message with "ice", "chain", and "bags". The song certainly could be positive overall but further look at word pairs and groups would make the message of the song clearer.
+
+```{r}
+songs_en_filtered %>% 
+  filter(song_name %in% most_neg$song_name) %>% 
+  group_by(song_name) %>% 
+  count(word) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(word, n))) +
+  geom_col() +
+  facet_wrap(~song_name, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+The negative songs, on the other hands, portray a very vague story with their most frequent words. Most of these words are swear words and carry little meaning by themselves. "Blueberry Faygo" is the only song of the 5 that has high diversity of top words and sequentially gives us more information about the song's topics. With words like "shooting", "poured", "millions", and named entities "draco" and "blueberry faygo", it is probably that the songs sings about living this certain kind of lifestyle with "draco" as an important figure, perhaps one of the singers or producers of the song, and "blueberry faygo" as a metaphor for certain thing about this lifestyle. Like stated previously, it is conceivably better to analyse these songs by pair or word groups to understand more what the topic or message of these songs is.
 
 ## Top Artists
 
