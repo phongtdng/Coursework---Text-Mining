@@ -264,7 +264,7 @@ oty %>%
 
 Although the 2 lexicons give different results on the overall sentiment of songs, they both seem to be in accordance on the rise and fall of negative and positive songs after 2020. In 2021, the number of negative songs rose while the number of negative songs plummeted. This trend, however, reserved from 2021 to 2023, where negative songs start to ascend and the positive songs went down in number. From 2019 to 2020, it seems that using "bing" gives us a fall in negative songs and an increase in positive songs but with "afinn" this pattern is inverted. Despite the difference in trend, the increase or decrease are relatively small for both graphs. Both also agree on the little number of neutral songs, which is perfectly normal for music since songs tend to express a lot of emotions.
 
-It is difficult to determine whether our initial or second hypothesis about the music listening trend during the pandemic was correct since the 2 lexicons produced different results for the period 2019 to 2020. The number of negative songs outweighed the number of positive songs but it is unclear whether it is a perpetual trend with pop culture or a singular phenomena within this period. However, the trend after 2020 tells a much clearer story. The COVID-19 pandemic started around December 2019 and began to spread worldwide in early 2020. Following this pandemic was a series of lock down in populated cities and was lifted after mid 2021 for the majority of places. The end of the quarantine allowed reunion between loved ones and represented a signal of the waned sign of COVID-19. Thus, this gave rise to celebration and positive sentiments, which seem to be reflected accordingly in the graphs. The graphs then show a surge of popularity of negative songs in 2022 and 2023. This could reflect the series of misfortune events that happened such as the war in Ukraine, the sharp rise of inflation, and various droughts and floods in many regions.
+It is difficult to determine whether our initial or second hypothesis about the music listening trend during the pandemic was correct since the 2 lexicons produced different results for the period 2019 to 2020. The number of negative songs outweighed the number of positive songs but it is unclear whether it is a perpetual trend with pop culture or a singular phenomena within this period. However, the trend after 2020 tells a much clearer story. The COVID-19 pandemic started around December 2019 and began to spread worldwide in early 2020. Following this pandemic was a series of lock down in populated cities and was lifted after mid 2021 for the majority of places. The end of the quarantine allowed reunion between loved ones and represented a signal of the waned sign of COVID-19. Thus, this gave rise to celebration and positive sentiments, which seem to be reflected accordingly in the graphs. The graphs then show a surge of popularity of negative songs in 2022 and 2023. This could reflect the sentiment against the series of misfortune events that happened such as the war in Ukraine, the sharp rise of inflation, and various droughts and floods in many regions.
 
 ## Most common positive and negative words
 
@@ -408,21 +408,10 @@ The negative songs, on the other hands, portray a very vague story with their mo
 
 ## Top Artists
 
-```{r}
-sa_df_afinn %>% 
-  group_by(artists) %>% 
-  count(label = sentiment_label, sort = TRUE) %>% 
-  head(10)
-```
+We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
 
 ```{r}
-sa_df_bing %>% 
-  group_by(artists) %>% 
-  count(label = sentiment_label, sort = TRUE) %>% 
-  head(10)
-```
-
-```{r}
+#make a data frame of top 10 artists (with most songs in the charts) of the period
 artists_sa <- bind_rows(
   sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
   sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
@@ -431,7 +420,8 @@ artists_sa <- bind_rows(
   mutate(total_songs = sum(n)) %>% 
   group_by(method) %>% 
   slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
-  
+
+#visualise  
 artists_sa %>% ggplot() +
   geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
   coord_flip() +
@@ -439,6 +429,8 @@ artists_sa %>% ggplot() +
   xlab("Top artists") +
   ylab("number of songs")
 ```
+
+Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
 
 # Term Frequency Analysis
 
