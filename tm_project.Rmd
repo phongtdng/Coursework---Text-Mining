@@ -14,14 +14,15 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # Library
 
 ```{r}
-#installing packages if needed
-install.packages("tidyverse")
-install.packages("rvest") #for scraping data from static web pages
-install.packages("xml2") #for reading html files of the web pages
-remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
-install.packages("cld3") #for detecting language
-install.packages("tidytext")
-install.packages("hunspell") #detecting misspelling
+# #installing packages if needed
+# install.packages("tidyverse")
+# install.packages("rvest") #for scraping data from static web pages
+# install.packages("xml2") #for reading html files of the web pages
+# remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
+# install.packages("cld3") #for detecting language
+# install.packages("tidytext")
+# install.packages("hunspell") #detecting misspelling
+# install.packages("ggpubr") #combining ggplots into 1
 ```
 
 ```{r}
@@ -31,6 +32,7 @@ library(xml2)
 library(geniusr) 
 library(tidytext)
 library(hunspell)
+library(ggpubr)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -160,6 +162,8 @@ songs_en_st <- songs_en %>%
   unnest_tokens(word, lyrics)
 ```
 
+As per usual with most case of analysing songs of pop culture, there are many potential issues for the analysis with the word used in these songs. In our case, there are many slang words that are not recorded in the dictionary and words that are sang differently for the purpose of rhyming or simply style. Some examples of these words are "nothing" becoming "nothin", "fighting" becoming "fightin", and so on. We will try to clean these as much as possible but it is frankly very messy to handle. There are packages that can help correcting the misspelling (e.g., `textclean`, `hunspell`) but these are usually not accurate for slang and words from pop culture. Stemming and lemmatization can help but at the same time might take away valuable information or incorrectly stem or lemmatize (for example, some packages reduce "is" to "i" or give errors to slang and words related to pop or internet cluture).
+
 ```{r}
 misspelling_dict <- songs_en_st %>% 
   select(word) %>% 
@@ -177,6 +181,8 @@ misspelling_dict <- songs_en_st %>%
 misspelling_dict
 ```
 
+We will create a dictionary for misspelled words from the songs' lyrics of the data set. We will use the `hunspell` package for identifying the misspelling. Most of the identified misspelled words are either verbs ending in "ing" (present participle or gerund) and names or words from other languages or slang. Since names and pop culture words contribute meaning to the song and are not entirely affected by the analysis, we will only correct the verb-ing words so later they can be identified by the lexicons. This was done by detecting misspelled words ending with "in" then adding "g" to the of the word. They are checked again by the `hunspell_check` to filter out other words that also end with "in" but are not verb-ings.
+
 ```{r}
 songs_cleaned <- songs_en_st %>% 
   left_join(misspelling_dict, by = join_by(word)) %>% 
@@ -187,6 +193,8 @@ songs_cleaned <- songs_en_st %>%
 songs_cleaned
 ```
 
+We prepare the final, cleaned version of the data set by joining the misspelling dictionary data frame with the original data frame then create a new column that takes the correction form of misspelled words and original form if they are not in the dictionary.
+
 # Filter Stop Words
 
 ```{r}
@@ -196,7 +204,9 @@ songs_en_filtered <- songs_cleaned %>%
 songs_en_filtered
 ```
 
-# Sentiment Analysis
+# Lexicon-based Sentiment Analysis
+
+In the following section, we will explore the sentimental themes of the popular songs from 2019 to 2023 to uncover insights about music listeners, as least for the pop culture, and how they relate or reflect the phenomena happening during these years. Since the uneventful arrival of COVID-19, there was a range of emotions displayed on social media, news, and public opinion sharing platforms. The pandemic claimed many lives and forced most countries into isolating people, thus, we could expect a rise in more negative songs about loneliness or sadness. It is also possible that songs about courage and felicity will rise instead as people try to cope by listening to positive songs.
 
 ```{r}
 sa_df_bing <- songs_en_filtered %>% 
@@ -207,7 +217,7 @@ sa_df_bing <- songs_en_filtered %>%
   mutate(sentiment = positive - negative) %>% 
   mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
 
-sa_df_bing
+sa_df_bing$sentiment %>% summary()
 ```
 
 ```{r}
@@ -217,7 +227,20 @@ sa_df_afinn <- songs_en_filtered %>%
   summarise(sentiment = sum(value)) %>% 
   mutate(sentiment_label = ifelse(sentiment == 0, "neutral", ifelse(sentiment > 0, "positive", "negative")))
 
-sa_df_afinn
+sa_df_afinn$sentiment %>% summary()
+```
+
+We are using 2 lexicons "bing" and "afinn" to measure the sentiments of words of the songs. With "bing", a song is classified as "positive" if the net value of positive words subtracting negative words is greater than 0 (positive - negative \> 0), "negative" if it is below 0 (positive - negative \< 0), and "neutral" otherwise (positive - negative = 0). With "afinn", this sentiment label is categorized by the sum sentimental values of words with the same criteria for "bing".
+
+A brief descriptive analysis on the sentiment attribute shows that more than half of the songs carry negative connotation in their lyrics with means of -8.3 and -16.8 and medians of -6 and -5 for "bing" and "afinn" repsectively. It also shows that the negative notation has a peaked value almost double the positive (-83 compared to 42 for "bing" and -325 compared to 163 for "afinn"). This means that the song with the highest negative connotation has almost double the amount of negative words or negativity than the top positive song. We can see this more clearly with the box-plots below.
+
+```{r}
+#box-plot for sentiment column
+ggarrange(
+  ggplot(sa_df_bing) + geom_boxplot(aes(y = sentiment)),
+  ggplot(sa_df_afinn) + geom_boxplot(aes(y = sentiment)),
+  labels = c("bing", "afinn")
+)
 ```
 
 ## Song sentiment over the years
@@ -239,7 +262,13 @@ oty %>%
   facet_wrap(~method, ncol = 1, scales = "free_y")
 ```
 
+Although the 2 lexicons give different results on the overall sentiment of songs, they both seem to be in accordance on the rise and fall of negative and positive songs after 2020. In 2021, the number of negative songs rose while the number of negative songs plummeted. This trend, however, reserved from 2021 to 2023, where negative songs start to ascend and the positive songs went down in number. From 2019 to 2020, it seems that using "bing" gives us a fall in negative songs and an increase in positive songs but with "afinn" this pattern is inverted. Despite the difference in trend, the increase or decrease are relatively small for both graphs. Both also agree on the little number of neutral songs, which is perfectly normal for music since songs tend to express a lot of emotions.
+
+It is difficult to determine whether our initial or second hypothesis about the music listening trend during the pandemic was correct since the 2 lexicons produced different results for the period 2019 to 2020. The number of negative songs outweighed the number of positive songs but it is unclear whether it is a perpetual trend with pop culture or a singular phenomena within this period. However, the trend after 2020 tells a much clearer story. The COVID-19 pandemic started around December 2019 and began to spread worldwide in early 2020. Following this pandemic was a series of lock down in populated cities and was lifted after mid 2021 for the majority of places. The end of the quarantine allowed reunion between loved ones and represented a signal of the waned sign of COVID-19. Thus, this gave rise to celebration and positive sentiments, which seem to be reflected accordingly in the graphs. The graphs then show a surge of popularity of negative songs in 2022 and 2023. This could reflect the sentiment against the series of misfortune events that happened such as the war in Ukraine, the sharp rise of inflation, and various droughts and floods in many regions.
+
 ## Most common positive and negative words
+
+We learned before that some songs could be extremely negative while very positive songs do not contain as many positive words. There also seems to be a permanent trend of pop culture in that negative songs dominate in number in the charts in all years. We will explore more the vocabulary used in the songs to understand more why these phenomena happen.
 
 ```{r}
 common_words_bing <- songs_en_filtered %>%
@@ -253,6 +282,12 @@ ggplot(common_words_bing %>% filter(n > 50)) +
   xlab("frequency") +
   ylab("word")
 ```
+
+It seems that positive words concentrates on the word "love" while negative words spread out on various words. The majority of the negative word use is curse words. However, some of these words can carry different sentimental notation other than negative depending on the context in which it is used. For example, "shit" and "damn" could be an affirmation of positive feeling when paired with words like "good". We will analyse this on a deeper level in another section.
+
+Some interesting negative words are "miss", "lost", "lonely", "die". Although they are common terminologies that are used in various situations, they are very related to the mishaps of the major events that happened during this time period. The prolonged quarantines could be a reason why "miss" and "lonely" got in the top popular words in the songs and the deaths due to COVID-19 and the wars might have contributed to the high use of "lost" and "die".
+
+On the positive chart, the words seem quite common and general. We were expecting more words that indicate hope or courage but they did not make it to the top here.
 
 ```{r}
 common_words_afinn <- songs_en_filtered %>%
@@ -272,25 +307,57 @@ ggplot(common_words_afinn %>% filter(n > 50)) +
   ylab("word")
 ```
 
-## Most positive vs most negative song
+With "afinn" lexicon, we get a similar result. Most popular negative words are curse words while popular positive words concentrate on "love" and "yeah". However, words like "hope" and "care" do appear to have some importance. "God" is also an interesting word that could indicate how the situations might have brought out people's need for faith.
+
+We will next look at the common words by year to have a clearer picture of each year.
 
 ```{r}
+common_words_by_year_bing <- songs_en_filtered %>%
+  inner_join(get_sentiments("bing")) %>% 
+  count(year, word, sentiment, sort = TRUE)
+
+ggplot(common_words_by_year_bing %>% filter(n> 30)) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~year, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+Looking by the year, it seems that there are some evidence supporting our earlier hypothesis. In 2020 and 2021, "lonely" and "miss" are in the top common words used in these popular songs. This could suggest that the pandemic and the lock down produced some nostalgic effect for people. Some words like "love", "shit", "bitch", "fuck" seem to be time-less, in that they appear in all years. It is also interesting that in 2019 and 2020, usage of sentimental words seemed to spread out more while from 2021 to 2023, and especially in 2022, certain words are overly repeated. Perhaps, 2022 was not a very creative year in song writing. Finally, although using "afinn" gives longer list of top words, their pattern are similar to using "bing". The results of using lexicon affin are displayed below.
+
+```{r}
+common_words_by_year_afinn <- songs_en_filtered %>%
+  inner_join(get_sentiments("afinn")) %>% 
+  count(year, word, value, sort = TRUE) %>% 
+  mutate(sentiment = case_when(
+    value < 0 ~ "negative",
+    value > 0 ~ "positive",
+    TRUE ~ "neutral"
+  ))
+
+ggplot(common_words_by_year_afinn %>% filter(n> 30)) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~year, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+## Most positive vs most negative songs
+
+```{r}
+#most positive songs from each year
 most_pos <- sa_df_afinn %>% 
   group_by(year) %>% 
   slice_max(sentiment)
 
-most_pos
-```
-
-```{r}
+#most negative songs from each year
 most_neg <- sa_df_afinn %>% 
   group_by(year) %>% 
   slice_min(sentiment)
 
-most_neg
-```
-
-```{r}
+#visualise
 ggplot() +
   geom_col(data = most_pos, aes(year, sentiment), fill = "orange") +
   geom_col(data = most_neg, aes(year, sentiment), fill = "blue") +
@@ -301,23 +368,50 @@ ggplot() +
             hjust = "right", nudge_y = -5)
 ```
 
+We have seen from the previous section the most common positive and negative words throughout 2019 to 2023 and also in each year. We will now look into the songs with the highest positive and negative net scores to see the development of emotional ranges in this time period. Like we saw in the beginning, the top most negative song had a much higher score than the most positive song. We can see that it applies for almost all of the years with the exception of 2020 where both songs have similar scores. The peak of positivity seems to dwindle after 2020 while for negativity it fluctuates. We can look into the lyrics of these songs to paint a clearer picture of the story they might be telling.
+
+```{r}
+songs_en_filtered %>% 
+  filter(song_name %in% most_pos$song_name) %>% 
+  group_by(song_name) %>% 
+  count(word) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(word, n))) +
+  geom_col() +
+  facet_wrap(~song_name, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+From looking at the top most frequent words of these songs, it seems that some common themes are love ("Flowers" and "Lose You to Love Me") and beauty ("Beautiful" and "Way 2 Sexy"). "To the Moon" seems to have more of catchy, positive sounds like "yeah" and "ha" without a clear story.
+
+Love is a compelling theme for powerful sentiments, it can be either really positive but also really negative. "Flowers" carries a lot of nostalgic notions with words like "remembered", "wanna", and seems to have a vivid story with action words like "cry", "write", "talk", "dancing", "leave", "hold" and "hands", coupled with nouns like "sand", "hours", "flowers". The whole lyrics of song portray clearly an overcome of a sad past romance and a new focus on self-love so it makes sense that the song has a positive net score of sentiment. "Lose You to Love Me", on the other hand, seems to have gotten a high score on positiveness due to high frequency of the word "love" and "yeah". From the name of the song and words like "promised", "fell", and "adored" being used in past tense make a clear story of moving on from a past loving relationship. However, other top appearing words like "hate", "burn", "killing, and "fires" could suggest a less positive overall sentiment that was compensated by high frequency of the positive score of "love" and "yeah". To further understand the stories of the songs, we would need to analyse pairs and groups of words, which will be detailed in later sections.
+
+"Beautiful" and "Way 2 Sexy" are also in the same theme but seem to differ in their message. "Beautiful" seems to convey a clearer positivity with use of words such as "angel", "amazing", coupling with words like "naked" and "imperfections", which probably talks about beauty despite flaws. "Way 2 Sexy", however, seems to have gotten a high score on positiveness due to repeated use of words like "sexy", "yeah", and "woah". The rest of the top words seem to talk about "fame", money ("cash"), and convey a more materialistic message with "ice", "chain", and "bags". The song certainly could be positive overall but further look at word pairs and groups would make the message of the song clearer.
+
+```{r}
+songs_en_filtered %>% 
+  filter(song_name %in% most_neg$song_name) %>% 
+  group_by(song_name) %>% 
+  count(word) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(word, n))) +
+  geom_col() +
+  facet_wrap(~song_name, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+The negative songs, on the other hands, portray a very vague story with their most frequent words. Most of these words are swear words and carry little meaning by themselves. "Blueberry Faygo" is the only song of the 5 that has high diversity of top words and sequentially gives us more information about the song's topics. With words like "shooting", "poured", "millions", and named entities "draco" and "blueberry faygo", it is probably that the songs sings about living this certain kind of lifestyle with "draco" as an important figure, perhaps one of the singers or producers of the song, and "blueberry faygo" as a metaphor for certain thing about this lifestyle. Like stated previously, it is conceivably better to analyse these songs by pair or word groups to understand more what the topic or message of these songs is.
+
 ## Top Artists
 
-```{r}
-sa_df_afinn %>% 
-  group_by(artists) %>% 
-  count(label = sentiment_label, sort = TRUE) %>% 
-  head(10)
-```
+We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
 
 ```{r}
-sa_df_bing %>% 
-  group_by(artists) %>% 
-  count(label = sentiment_label, sort = TRUE) %>% 
-  head(10)
-```
-
-```{r}
+#make a data frame of top 10 artists (with most songs in the charts) of the period
 artists_sa <- bind_rows(
   sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
   sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
@@ -326,7 +420,8 @@ artists_sa <- bind_rows(
   mutate(total_songs = sum(n)) %>% 
   group_by(method) %>% 
   slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
-  
+
+#visualise  
 artists_sa %>% ggplot() +
   geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
   coord_flip() +
@@ -334,6 +429,8 @@ artists_sa %>% ggplot() +
   xlab("Top artists") +
   ylab("number of songs")
 ```
+
+Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
 
 # Term Frequency Analysis
 
