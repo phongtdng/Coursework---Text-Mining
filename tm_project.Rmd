@@ -569,7 +569,9 @@ songs_tf_idf %>%
 
 # N-grams
 
-## Preparing bigram
+## Bigram
+
+### Preparing data
 
 ```{r}
 song_bigram <- songs_cleaned %>%
@@ -618,7 +620,7 @@ bigram_united %>%
   ylab("word")
 ```
 
-## TF-IDF
+### TF-IDF
 
 ```{r}
 bigram_tf_idf <- bigram_united %>%
@@ -634,7 +636,7 @@ bigram_tf_idf %>%
   facet_wrap(~year, scale = "free_y")
 ```
 
-## Graph
+### Graph
 
 ```{r}
 library("igraph")
