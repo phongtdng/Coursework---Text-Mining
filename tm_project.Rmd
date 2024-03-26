@@ -552,3 +552,17 @@ Some songs are present in the top 100 charts in multiple years, which will creat
 We see that although each year some words stand out more than other, we can still detect some popular theme for all years. For example, there is a tendency towards including a woman figure in the songs with words such as "girlfriend", "roxanne", "woman", "she" and "gaga". Words about intoxication are also very relevant in the recent years with the appearance of "tripping", " margarita", and " wasted". Relationship is also one theme that is distinguished from the appearance of words such as "girlfriend", "heartless", and "heartbreak". Words like "hopes", "lord", "amen", "holy", and "karma" also signify the importance of faith or spiritual belief. These themes are, perhaps, not only important for the recent years but have been dominant throughout history in music and other literature. They tend to invoke emotions that people are naturally drawn to and therefore do not surprisingly come as important topics.
 
 It is also important to point out that from 2021 to 2023, Christmas songs seem to make a come back to the top as words like "christmas", "jolly", "holly", "jingle" and "bell". Christmas is centered around reunions with family and friends, something of which people were deprived during the series of lock down due to the pandemic. Thus, it is possible as the pandemic subsided, people started to be in the mood again for the holidays, which they could then enjoy without restriction.
+
+## Top songs
+
+```{r}
+songs_tf_idf %>% 
+  filter(position == 1) %>% 
+  group_by(year) %>%
+  slice_max(tf_idf, n = 15) %>%
+  ungroup() %>% 
+  ggplot(aes(tf_idf, reorder(word, tf_idf))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~year, scale = "free") +
+  labs(x = "tf-idf", y = NULL)
+```
