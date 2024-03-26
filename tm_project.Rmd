@@ -7,9 +7,11 @@ output: html_document
 
 # Introduction
 
-Since the incident of COVID-19, the daily life of many people has changed, along with this is an increase in mental health issue and a reduction in ability to cope with emotional challenges (search for evidence later). One device that is arguably important to emotional well being is music. Thus, people's choice of music is telling of how they feel about their emotional life as well as their perception of the current world.
+The last 5 years have been eventful around the world. From Brexit in 2019, to the global spread of COVID-19 in 2020, the 2020 Olympic game in 2021, the Russia-Ukrain war in 2022, and the recent record of global temperature in 2023, these are just a few major events that happened. Undoubtedly, many of these events have left a permanent mark in the mind of people, some even changed their behaviors everlastingly. Different people respond differently to these events and changes. In this project, we will explore this reaction through the lens of pop music.
 
-In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of a large community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large chunk of the music community (stats?).
+Pop culture has always been an important device that mirrors societal attitude and expression. One powerful tool that portrays well the influence of pop culture on the public is music. Music reflects well emotions and belief of people. By examining the general's choice of pop songs, we can obtain valuable insights on cultural trends and collective sentiments of the society.
+
+In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of the community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large part of the music community (stats?).
 
 # Library
 
@@ -434,7 +436,9 @@ Using "afinn" and "bing" gives us different results. However, the common pattern
 
 # Term Frequency Analysis
 
-## Most often used words
+From the sentiment analysis, we learned that the pop culture seems to favor negative words, particularly profanity. Some of the words in these popular songs, both positive and negative, seem to have long tail tendency with some common words topping the chart of frequency. We also looked at some top sentiment words of songs to understand what emotional message that the songs tried to deliver. Finally, we learned that the majority of the top artists in the music charts made it to the peak by writing more negative songs. In this section, we will dive deeper into the content of the songs to discover what are the common objects of attention in the pop music community.
+
+## Word Count
 
 ```{r}
 song_words <- songs_cleaned %>% 
@@ -442,11 +446,9 @@ song_words <- songs_cleaned %>%
   group_by(year, song_name) %>% 
   mutate(total_words = sum(n),
          term_freq = n/total_words,
-         position_level = ifelse(position <= 10, "Top 10", "Top 100")) 
-song_words
-```
+         position_level = ifelse(position <= 10, "Top 10", "Top 100")) %>% 
+  ungroup()
 
-```{r}
 #word count distribution
 ggplot(song_words) +
   geom_histogram(aes(total_words, fill = position_level)) +
@@ -454,14 +456,9 @@ ggplot(song_words) +
   ylab("Frequency")
 ```
 
-## Wordiest songs
+Most songs tend to be around 3 to 4 minutes in length. This is due to how vinyls were made in the 1800s and 1900s, which limited the the length of music that can be written onto them ([Vox](https://www.vox.com/2014/8/18/6003271/why-are-songs-3-minutes-long)). Vox also explained that although the evolution of technology allowed songs to recorded for a longer period of time, the radio and digital media industry influenced music to stay short in order to be able to be enter the mainstream.
 
-```{r}
-song_words %>% 
-  group_by(year) %>% 
-  slice_max(total_words) %>% 
-  distinct(song_name, total_words)
-```
+Undoubtedly, with limited amount of time, the length of songs' lyrics also stay within a certain range. We can see this from the graph above. Most songs tend to have around 300 to 600 words. Top 10 songs are also mostly in this range. Thus, we can hypothesize that lengthy and wordy songs might have less chances of making it to the top 10.
 
 ```{r}
 ggplot(song_words) +
@@ -471,13 +468,17 @@ ggplot(song_words) +
   facet_wrap(~position_level)
 ```
 
-## Term Variation
+This phenomenon does not seem to change through time. Songs seem to stay consistent in lyrics length in all the years and top 10 songs seem to be slightly shorter than the top 100.
+
+## Term Significance
 
 ```{r}
 ggplot(song_words, aes(term_freq)) +
   geom_histogram() +
   xlim(0, 0.15)
 ```
+
+Similar to novels, songs seem to share a long tail distribution in word frequency. Some words are more common and appear more frequently and there are words that make the songs more unique. We will explore them further on the analysis.
 
 ```{r}
 ggplot(song_words, aes(term_freq)) +
@@ -486,27 +487,59 @@ ggplot(song_words, aes(term_freq)) +
   facet_wrap(~year, scales = "free_y")
 ```
 
-It's possible after COVID-19 and the quarantine period, new words came out so there are less variation in 2022 and 2023.
-
-## Songs with most distinctive and characteristic words
+We can also confirm that this phenomenon is steady throughout each year by looking at the graph above of the word distribution by year. So, some words have higher frequency compared to the rest. By looking at them, we can better understand the important words of a song and consequently what the song is about. We will next analyze the term frequency for each year to find out the words the characterize them.
 
 ```{r}
-songs_tf_idf <- song_words %>% 
-  bind_tf_idf(word, song_name, n) %>% 
-  group_by(song_name) %>% 
-  mutate(total_tf_idf = sum(tf_idf)) %>% 
-  arrange(desc(total_tf_idf)) %>% 
-  ungroup()
+top_term <- song_words %>% 
+  group_by(year) %>% 
+  slice_max(term_freq, n=10) 
 
-songs_tf_idf 
+ggplot(top_term) +
+  geom_col(aes(term_freq, reorder(word, term_freq))) + 
+  ylab("word") +
+  xlab("frequency") +
+  facet_wrap(~year, scales = "free_y")
 ```
 
-## Distinctive and characteristic words by year
+It seems that some significant words are vocal sounds (e.g., "ooh", "la", "bam", etc.). Although they contribute to the songs vocally, they do not carry much semantic meaning and therefore we will filter them out to get a better picture of the songs' messages.
 
 ```{r}
+vocal_sounds <- c("ah", "ody", "boaw", "ooh", "oh", "bam", "da", "na", "woah", "yaka", "la", "doo", "ding", "dong", "buh")
+
+top_term <- song_words %>%
+  filter(!word %in% vocal_sounds) %>% 
+  group_by(year) %>% 
+  slice_max(term_freq, n=10) 
+  
+ggplot(top_term) +
+  geom_col(aes(term_freq, reorder(word, term_freq))) + 
+  ylab("word") +
+  xlab("frequency") +
+  facet_wrap(~year, scales = "free_y")
+```
+
+After weeding out the vocal sounds, we can see that there are some common themes that characterize the top songs for each year. "i" and "you" appear in all years, suggesting that the top songs tend to have a first person perspective. This could make the song more personal and better connect with the listeners. The context of the songs, however, are still quite hazy and not distinctive enough to draw conclusions on the relevant topics of the years. We will now compute the inverse document frequency to combat this issue.
+
+```{r}
+#add more words and sounds that do not have semantic meaning
+vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm")
+
+#some songs are in the top charts for several years and tf-idf do not work with group() so we will create a function to do this per year
+map_tf_idf <- function(y) {
+  df <- song_words %>% 
+    filter(year == y) %>% 
+    filter(!word %in% vocal_sounds_extended) %>%
+    bind_tf_idf(word, song_name, n)
+}
+
+#binding all the years to create a single dataframe with all the years
+songs_tf_idf <- map_dfr(c(2019:2023), map_tf_idf)
+songs_tf_idf
+
+#visualising top relevant words of each year
 songs_tf_idf %>% 
   group_by(year) %>%
-  slice_max(tf_idf, n = 10) %>%
+  slice_max(tf_idf, n = 15) %>%
   ungroup() %>% 
   ggplot(aes(tf_idf, reorder(word, tf_idf))) +
   geom_col(show.legend = FALSE) +
@@ -514,17 +547,22 @@ songs_tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-Maybe important "words" are catchy, repetitive sounds (e.g., da, taki, doo, blrrrd etc.)/
+Some songs are present in the top 100 charts in multiple years, which will create issue when using the function `bind_tf_idf()` (giving negative idf values). Therefore, we will need to group them by year. However, the function `bind_tf_idf()` ignores groups so we have to do it separately. In the code, a helper function was created which takes our original data frame of words with count and filters it by an input year and the meaningless sounds, then finally creates new "tf", "idf", and "tf_idf" columns with `bind_tf_idf()`. The output of this function is a data frame of songs and their filtered words for one year. We then use the function `map_dfr()` to apply the function on an array of years to ultimately obtain a data frame of songs with "tf", "idf", and "tf_idf" values that are grouped by year.
 
-## Comparing Top 10 songs vs the rest
+We see that although each year some words stand out more than other, we can still detect some popular theme for all years. For example, there is a tendency towards including a woman figure in the songs with words such as "girlfriend", "roxanne", "woman", "she" and "gaga". Words about intoxication are also very relevant in the recent years with the appearance of "tripping", " margarita", and " wasted". Relationship is also one theme that is distinguished from the appearance of words such as "girlfriend", "heartless", and "heartbreak". Words like "hopes", "lord", "amen", "holy", and "karma" also signify the importance of faith or spiritual belief. These themes are, perhaps, not only important for the recent years but have been dominant throughout history in music and other literature. They tend to invoke emotions that people are naturally drawn to and therefore do not surprisingly come as important topics.
+
+It is also important to point out that from 2021 to 2023, Christmas songs seem to make a come back to the top as words like "christmas", "jolly", "holly", "jingle" and "bell". Christmas is centered around reunions with family and friends, something of which people were deprived during the series of lock down due to the pandemic. Thus, it is possible as the pandemic subsided, people started to be in the mood again for the holidays, which they could then enjoy without restriction.
+
+## Top songs
 
 ```{r}
 songs_tf_idf %>% 
-  group_by(position_level) %>% 
-  slice_max(tf_idf, n = 10) %>% 
+  filter(position == 1) %>% 
+  group_by(year) %>%
+  slice_max(tf_idf, n = 15) %>%
   ungroup() %>% 
   ggplot(aes(tf_idf, reorder(word, tf_idf))) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~position_level, scale = "free") +
+  facet_wrap(~year, scale = "free") +
   labs(x = "tf-idf", y = NULL)
 ```
