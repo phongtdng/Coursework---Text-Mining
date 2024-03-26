@@ -522,7 +522,7 @@ After weeding out the vocal sounds, we can see that there are some common themes
 
 ```{r}
 #add more words and sounds that do not have semantic meaning
-vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm")
+vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm")
 
 #some songs are in the top charts for several years and tf-idf do not work with group() so we will create a function to do this per year
 map_tf_idf <- function(y) {
@@ -565,4 +565,90 @@ songs_tf_idf %>%
   geom_col(show.legend = FALSE) +
   facet_wrap(~year, scale = "free") +
   labs(x = "tf-idf", y = NULL)
+```
+
+# N-grams
+
+## Preparing bigram
+
+```{r}
+song_bigram <- songs_cleaned %>%
+  select(-lang) %>% 
+  #nest back clean dataframe to avoid correcting the spelling again
+  nest(lyrics = word) %>% 
+  #nest gives a list of list so we have to unlist them
+  mutate(lyrics = map(lyrics, unlist),
+         lyrics = unlist(lapply(lyrics, paste, collapse = " "))) %>% 
+  #unnesting to bigrams 
+  unnest_tokens(bigram, lyrics, token = "ngrams", n = 2)
+
+song_bigram %>% 
+  count(bigram, sort = TRUE)
+```
+
+```{r}
+bigram_seperated <- song_bigram %>% 
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigram_seperated
+```
+
+```{r}
+bigram_filtered <- bigram_seperated %>% 
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>% 
+  filter(!word1 %in% vocal_sounds_extended) %>% 
+  filter(!word2 %in% vocal_sounds_extended)
+
+bigram_filtered 
+```
+
+```{r}
+bigram_united <- bigram_filtered %>% 
+  unite(bigram, word1, word2, sep = " ")
+
+bigram_united %>% 
+  group_by(year) %>% 
+  count(bigram, sort = T) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(bigram, n))) +
+  geom_col() +
+  facet_wrap(~year, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+## TF-IDF
+
+```{r}
+bigram_tf_idf <- bigram_united %>%
+  count(year, bigram) %>%
+  bind_tf_idf(bigram, year, n) %>%
+  arrange(desc(tf_idf))
+
+bigram_tf_idf %>% 
+  group_by(year) %>% 
+  slice_max(tf_idf, n = 10) %>% 
+  ggplot() +
+  geom_col(aes(tf_idf, reorder(bigram, tf_idf))) +
+  facet_wrap(~year, scale = "free_y")
+```
+
+## Graph
+
+```{r}
+library("igraph")
+library("ggraph")
+
+bigram_count <- bigram_filtered %>% 
+  count(word1, word2 , sort = T)
+
+bigram_for_graph <- bigram_count %>%
+  filter(n > 10) %>%
+  graph_from_data_frame()
+
+ggraph(bigram_for_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
 ```
