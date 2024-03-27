@@ -702,6 +702,8 @@ song_trigram %>%
   count(trigram, sort = TRUE)
 ```
 
+Bigram has given us a better context about the songs and shown the story of each year as well as all the years. We can extend the analysis by looking at groups of 3 words, or trigrams, to further understand the context and identify some popular terms being used. The preparation is similar to making bigrams. The cleaned data frame of songs with individual words are stitched back together then re-unraveled into trigrams. From the trigram count, we still need to clean out the vocal sounds to obtain word groups that have meaning.
+
 ```{r}
 trigram_seperated <- song_trigram %>% 
   separate(trigram, c("word1", "word2", "word3"), sep = " ")
@@ -714,7 +716,8 @@ trigram_filtered <- trigram_seperated %>%
   #filter vocal sounds
   filter(!word1 %in% vocal_sounds_extended) %>% 
   filter(!word2 %in% vocal_sounds_extended) %>% 
-  filter(!word3 %in% vocal_sounds_extended)
+  filter(!word3 %in% vocal_sounds_extended) %>% 
+  filter(word1!=word2 & word2!=word3 & word1!=word3)
 
 trigram_united <- trigram_filtered %>% 
   unite(trigram, word1, word2, word3, sep = " ")
@@ -731,6 +734,10 @@ trigram_united %>%
   ylab("word")
 ```
 
+After filtering out stop words and vocal sounds, we still got many groups of repeating singular word (e.g., "woman woman woman") or repeating pairs (e.g., "jingle bell jingle" from "jingle bell jingle bell"). These groups are extraneous since we examined them in term frequency analysis and bigram analysis. Therefore, we will exclude them and look at groups of different words that might be more interesting for the analysis. The exclusion was done by filtering out rows that have word 1 equal to word 2, word 2 equal to word 3, and word 1 equal to word 3.
+
+In 2019, it seems that some songs with spanish lyrics gained popularity as we see groups of Spanish words. We can also see that the term "hot girl summer" probably started to rise rapidly in popularity from this year. This term seems to be followed up by another song using the term "hot girl bummer" in response in 2020. It also seems that "god" was not exactly used in a context of faith but something else related to drinking as we see the terms "beer talking god", "drinking beer talking", and "talking god amen". Finally, we again see the Christmas terms "holly jolly christmas" rising in 2022 and 2023.
+
 ```{r}
 trigram_tf_idf <- trigram_united %>%
   count(year, trigram) %>%
@@ -744,6 +751,8 @@ trigram_tf_idf %>%
   geom_col(aes(tf_idf, reorder(trigram, tf_idf))) +
   facet_wrap(~year, scale = "free_y")
 ```
+
+Using tf-idf, we obtain similar results with just the term frequency. These word groups seem to be relevant and distinct for each year.
 
 ## Top songs
 
