@@ -223,6 +223,7 @@ songs_en_filtered
 In the following section, we will explore the sentimental themes of the popular songs from 2019 to 2023 to uncover insights about music listeners, as least for the pop culture, and how they relate or reflect the phenomena happening during these years. Since the uneventful arrival of COVID-19, there was a range of emotions displayed on social media, news, and public opinion sharing platforms. The pandemic claimed many lives and forced most countries into isolating people, thus, we could expect a rise in more negative songs about loneliness or sadness. It is also possible that songs about courage and felicity will rise instead as people try to cope by listening to positive songs.
 
 ```{r}
+#create data set with sentiment values using bing
 sa_df_bing <- songs_en_filtered %>% 
   inner_join(get_sentiments("bing")) %>% 
   group_by(year, song_name, artists) %>% 
@@ -235,6 +236,7 @@ sa_df_bing$sentiment %>% summary()
 ```
 
 ```{r}
+#create data set with sentiment values using afinn
 sa_df_afinn <- songs_en_filtered %>% 
   inner_join(get_sentiments("afinn")) %>% 
   group_by(year, song_name, artists) %>% 
@@ -266,6 +268,7 @@ oty <- bind_rows(
   sa_df_bing %>% select(-negative, -positive) %>% mutate(method = "bing")
 )
 
+#visualize
 oty %>% 
   group_by(method, year, sentiment_label) %>% 
   count() %>% 
@@ -285,16 +288,18 @@ It is difficult to determine whether our initial or second hypothesis about the 
 We learned before that some songs could be extremely negative while very positive songs do not contain as many positive words. There also seems to be a permanent trend of pop culture in that negative songs dominate in number in the charts in all years. We will explore more the vocabulary used in the songs to understand more why these phenomena happen.
 
 ```{r}
+#count words to find top used words
 common_words_bing <- songs_en_filtered %>%
   inner_join(get_sentiments("bing")) %>% 
   count(word, sentiment, sort = TRUE)
 
+#visualize
 ggplot(common_words_bing %>% filter(n > 50)) +
   geom_col(aes(reorder(word,n), n, fill = sentiment)) +
   coord_flip() +
   facet_wrap(~sentiment, scales = "free_y") +
-  xlab("frequency") +
-  ylab("word")
+  xlab("word") +
+  ylab("count")
 ```
 
 It seems that positive words concentrates on the word "love" while negative words spread out on various words. The majority of the negative word use is curse words. However, some of these words can carry different sentimental notation other than negative depending on the context in which it is used. For example, "shit" and "damn" could be an affirmation of positive feeling when paired with words like "good". We will analyse this on a deeper level in another section.
@@ -304,6 +309,7 @@ Some interesting negative words are "miss", "lost", "lonely", "die". Although th
 On the positive chart, the words seem quite common and general. We were expecting more words that indicate hope or courage but they did not make it to the top here.
 
 ```{r}
+#count words to find top used words
 common_words_afinn <- songs_en_filtered %>%
   inner_join(get_sentiments("afinn")) %>% 
   count(word, value, sort = TRUE) %>% 
@@ -313,12 +319,13 @@ common_words_afinn <- songs_en_filtered %>%
     TRUE ~ "neutral"
   ))
 
+#visualize
 ggplot(common_words_afinn %>% filter(n > 50)) +
   geom_col(aes(reorder(word,n), n, fill = sentiment)) +
   coord_flip() +
   facet_wrap(~sentiment, scales = "free_y") +
-  xlab("frequency") +
-  ylab("word")
+  xlab("word") +
+  ylab("frequency")
 ```
 
 With "afinn" lexicon, we get a similar result. Most popular negative words are curse words while popular positive words concentrate on "love" and "yeah". However, words like "hope" and "care" do appear to have some importance. "God" is also an interesting word that could indicate how the situations might have brought out people's need for faith.
@@ -326,21 +333,24 @@ With "afinn" lexicon, we get a similar result. Most popular negative words are c
 We will next look at the common words by year to have a clearer picture of each year.
 
 ```{r}
+#count words by year
 common_words_by_year_bing <- songs_en_filtered %>%
   inner_join(get_sentiments("bing")) %>% 
   count(year, word, sentiment, sort = TRUE)
 
+#visualize
 ggplot(common_words_by_year_bing %>% filter(n> 30)) +
   geom_col(aes(reorder(word,n), n, fill = sentiment)) +
   coord_flip() +
   facet_wrap(~year, scales = "free_y") +
-  xlab("frequency") +
-  ylab("word")
+  xlab("word") +
+  ylab("frequency")
 ```
 
 Looking by the year, it seems that there are some evidence supporting our earlier hypothesis. In 2020 and 2021, "lonely" and "miss" are in the top common words used in these popular songs. This could suggest that the pandemic and the lock down produced some nostalgic effect for people. Some words like "love", "shit", "bitch", "fuck" seem to be time-less, in that they appear in all years. It is also interesting that in 2019 and 2020, usage of sentimental words seemed to spread out more while from 2021 to 2023, and especially in 2022, certain words are overly repeated. Perhaps, 2022 was not a very creative year in song writing. Finally, although using "afinn" gives longer list of top words, their pattern are similar to using "bing". The results of using lexicon affin are displayed below.
 
 ```{r}
+#count word by years
 common_words_by_year_afinn <- songs_en_filtered %>%
   inner_join(get_sentiments("afinn")) %>% 
   count(year, word, value, sort = TRUE) %>% 
@@ -350,22 +360,25 @@ common_words_by_year_afinn <- songs_en_filtered %>%
     TRUE ~ "neutral"
   ))
 
+#visualize
 ggplot(common_words_by_year_afinn %>% filter(n> 30)) +
   geom_col(aes(reorder(word,n), n, fill = sentiment)) +
   coord_flip() +
   facet_wrap(~year, scales = "free_y") +
-  xlab("frequency") +
-  ylab("word")
+  xlab("word") +
+  ylab("frequency")
 ```
 
 ## Top Songs
 
 ```{r}
+#assign sentiments for only songs at 1st position of the chart
 top_songs_bing <- songs_en_filtered %>%
   filter(position == 1) %>% 
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) 
   
+#visualize
 ggplot(top_songs_bing) +
   geom_col(aes(reorder(word,n), n, fill = sentiment)) +
   coord_flip() +
@@ -379,6 +392,7 @@ We have seen the over sentiments of all songs previously, perhaps the top songs 
 For the top songs, there are positive words in common to all songs such as "love", "loving", "trust" and "woo". However, we also see some more specific and more positive words such as "happier", "perfect", "perfectly", and "glitter". On the negative side, they also use profanity such as "shit" and "hell". "shimmer" seems to be considered negative in bing lexicon but the word's definition does not exactly coincide so we will not consider it. It is interesting, however, that the negative words are also more specific and deeper such as "drowning" and "cold".
 
 ```{r}
+#assign sentiments for only songs at 1st position of the chart
 top_songs_afinn <- songs_en_filtered %>%
   filter(position == 1) %>% 
   inner_join(get_sentiments("afinn")) %>% 
@@ -389,6 +403,7 @@ top_songs_afinn <- songs_en_filtered %>%
     TRUE ~ "neutral"
   ))
 
+#visualize
 ggplot(top_songs_afinn) +
   geom_col(aes(reorder(word,n), n, fill = sentiment)) +
   coord_flip() +
@@ -416,7 +431,7 @@ artists_sa <- bind_rows(
   group_by(method) %>% 
   slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
 
-#visualise  
+#visualize  
 artists_sa %>% ggplot() +
   geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
   coord_flip() +
@@ -440,7 +455,7 @@ most_neg <- sa_df_afinn %>%
   group_by(year) %>% 
   slice_min(sentiment)
 
-#visualise
+#visualize
 ggplot() +
   geom_col(data = most_pos, aes(year, sentiment), fill = "orange") +
   geom_col(data = most_neg, aes(year, sentiment), fill = "blue") +
@@ -454,6 +469,7 @@ ggplot() +
 We have seen from the previous section the most common positive and negative words throughout 2019 to 2023 and also in each year. We will now look into the songs with the highest positive and negative net scores to see the development of emotional ranges in this time period. Like we saw in the beginning, the top most negative song had a much higher score than the most positive song. We can see that it applies for almost all of the years with the exception of 2020 where both songs have similar scores. The peak of positivity seems to dwindle after 2020 while for negativity it fluctuates. We can look into the lyrics of these songs to paint a clearer picture of the story they might be telling.
 
 ```{r}
+#visualise words with highest count for each of the positive songs
 songs_en_filtered %>% 
   filter(song_name %in% most_pos$song_name) %>% 
   group_by(song_name) %>% 
@@ -474,6 +490,7 @@ Love is a compelling theme for powerful sentiments, it can be either really posi
 "Beautiful" and "Way 2 Sexy" are also in the same theme but seem to differ in their message. "Beautiful" seems to convey a clearer positivity with use of words such as "angel", "amazing", coupling with words like "naked" and "imperfections", which probably talks about beauty despite flaws. "Way 2 Sexy", however, seems to have gotten a high score on positiveness due to repeated use of words like "sexy", "yeah", and "woah". The rest of the top words seem to talk about "fame", money ("cash"), and convey a more materialistic message with "ice", "chain", and "bags". The song certainly could be positive overall but further look at word pairs and groups would make the message of the song clearer.
 
 ```{r}
+#visualise words with highest count for each of the negative songs
 songs_en_filtered %>% 
   filter(song_name %in% most_neg$song_name) %>% 
   group_by(song_name) %>% 
@@ -496,6 +513,7 @@ From the sentiment analysis, we learned that the pop culture seems to favor nega
 ## Word Count
 
 ```{r}
+#create a data frame with count of words and total amount of words of the song
 song_words <- songs_cleaned %>% 
   count(position, year, song_name, word, sort = TRUE) %>% 
   group_by(year, song_name) %>% 
@@ -516,6 +534,7 @@ Most songs tend to be around 3 to 4 minutes in length. This is due to how vinyls
 Undoubtedly, with limited amount of time, the length of songs' lyrics also stay within a certain range. We can see this from the graph above. Most songs tend to have around 300 to 600 words. Top 10 songs are also mostly in this range. Thus, we can hypothesize that lengthy and wordy songs might have less chances of making it to the top 10.
 
 ```{r}
+#compare average word counts of top 10 vs the rest of top 100
 ggplot(song_words) +
   stat_summary(aes(year, total_words),
                fun.y = "mean",
@@ -528,6 +547,7 @@ This phenomenon does not seem to change through time. Songs seem to stay consist
 ## Term Significance
 
 ```{r}
+#visualize term frequency distribution
 ggplot(song_words, aes(term_freq)) +
   geom_histogram() +
   xlim(0, 0.15)
@@ -536,6 +556,7 @@ ggplot(song_words, aes(term_freq)) +
 Similar to novels, songs seem to share a long tail distribution in word frequency. Some words are more common and appear more frequently and there are words that make the songs more unique. We will explore them further on the analysis.
 
 ```{r}
+#visualize term frequency distribution for each year
 ggplot(song_words, aes(term_freq)) +
   geom_histogram(show.legend = FALSE) +
   xlim(0, 0.05) + 
@@ -545,10 +566,12 @@ ggplot(song_words, aes(term_freq)) +
 We can also confirm that this phenomenon is steady throughout each year by looking at the graph above of the word distribution by year. So, some words have higher frequency compared to the rest. By looking at them, we can better understand the important words of a song and consequently what the song is about. We will next analyze the term frequency for each year to find out the words the characterize them.
 
 ```{r}
+#filter top 10 words with highest term frequency for each year
 top_term <- song_words %>% 
   group_by(year) %>% 
   slice_max(term_freq, n=10) 
 
+#visualize
 ggplot(top_term) +
   geom_col(aes(term_freq, reorder(word, term_freq))) + 
   ylab("word") +
@@ -559,13 +582,16 @@ ggplot(top_term) +
 It seems that some significant words are vocal sounds (e.g., "ooh", "la", "bam", etc.). Although they contribute to the songs vocally, they do not carry much semantic meaning and therefore we will filter them out to get a better picture of the songs' messages.
 
 ```{r}
+#make a list of vocal sounds and sounds that do not contribute any semantic meaning
 vocal_sounds <- c("ah", "ody", "boaw", "ooh", "oh", "bam", "da", "na", "woah", "yaka", "la", "doo", "ding", "dong", "buh", "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm", "bop", "yeah")
 
+#filter top 10 words with highest term frequency for each year
 top_term <- song_words %>%
   filter(!word %in% vocal_sounds) %>% 
   group_by(year) %>% 
   slice_max(term_freq, n=10) 
-  
+
+#visualize  
 ggplot(top_term) +
   geom_col(aes(term_freq, reorder(word, term_freq))) + 
   ylab("word") +
@@ -608,6 +634,7 @@ It is also important to point out that from 2021 to 2023, Christmas songs seem t
 ## Top songs
 
 ```{r}
+#visualize top words with highest tf-idf of top 1 song of each year
 songs_tf_idf %>% 
   filter(position == 1) %>% 
   group_by(year) %>%
@@ -640,6 +667,7 @@ We have explored the sentimental and possible themes of the top songs from 2019 
 ### Preparing data
 
 ```{r}
+#create a bigram data frame
 song_bigram <- songs_cleaned %>%
   select(-lang) %>% 
   #nest back clean dataframe to avoid correcting the spelling again
@@ -659,9 +687,11 @@ First to convert words into pairs, we will stitch back the cleaned data frame wi
 Looking at the counts, we can see that there are many bigrams that are made up of stop words and vocal sounds that do not contribute much meaning to the songs. Therefore, we will filter them out.
 
 ```{r}
+#separate the bigrams in order to filter
 bigram_seperated <- song_bigram %>% 
   separate(bigram, c("word1", "word2"), sep = " ")
 
+#filter rows that has stop words or vocal sounds
 bigram_filtered <- bigram_seperated %>% 
   #filter stop words
   filter(!word1 %in% stop_words$word) %>%
@@ -670,6 +700,7 @@ bigram_filtered <- bigram_seperated %>%
   filter(!word1 %in% vocal_sounds) %>% 
   filter(!word2 %in% vocal_sounds)
 
+#stitch back the bigrams
 bigram_united <- bigram_filtered %>% 
   unite(bigram, word1, word2, sep = " ")
 
@@ -679,6 +710,7 @@ bigram_united
 Above, we first separate the bigrams into 2 columns of individual words. We then filtered for each columns of rows that contained the stop words and vocal sounds from the list we created before. We then united the words together to have a final data frame similar to the original but with less meaning less bigrams. Now we can explore better the context of the songs.
 
 ```{r}
+#visualize top bigrams with highest frequency
 bigram_united %>% 
   group_by(year) %>% 
   count(bigram, sort = T) %>% 
@@ -696,11 +728,13 @@ It seems that for all the years, slang and profanity are frequently present. We 
 ### TF-IDF
 
 ```{r}
+#create data frame of bigram with tf-idf values
 bigram_tf_idf <- bigram_united %>%
   count(year, bigram) %>%
   bind_tf_idf(bigram, year, n) %>%
   arrange(desc(tf_idf))
 
+#visualize for each year
 bigram_tf_idf %>% 
   group_by(year) %>% 
   slice_max(tf_idf, n = 10) %>% 
@@ -726,7 +760,7 @@ bigram_for_graph <- bigram_count %>%
     filter(n > 8) %>%
     graph_from_data_frame()
 
-#visualise graph
+#visualize graph
 ggraph(bigram_for_graph, layout = "fr") +
     geom_edge_link(aes(edge_alpha = n, edge_width = "1px"), show.legend = FALSE) +
     geom_node_point() +
@@ -755,7 +789,7 @@ song_trigram <- songs_cleaned %>%
   #nest gives a list of list so we have to unlist them
   mutate(lyrics = map(lyrics, unlist),
          lyrics = unlist(lapply(lyrics, paste, collapse = " "))) %>% 
-  #unnesting to bigrams 
+  #unnesting to trigrams 
   unnest_tokens(trigram, lyrics, token = "ngrams", n = 3)
 
 song_trigram %>% 
@@ -817,6 +851,7 @@ Using tf-idf, we obtain similar results with just the term frequency. These word
 ## Top songs
 
 ```{r}
+#visualize top bigrams with highest tf-idf for top song of each year
 bigram_united %>% 
   filter(position == 1) %>% 
   count(year, bigram) %>%
@@ -838,6 +873,7 @@ It seems that the context of the word use was interpreted correctly. The song in
 Previously, through sentiment analysis, term frequency analysis, and n-gram analysis, we have detected some common themes that top pop songs from 2019 to 2023 sing about. These are, but not limited to, love, faith, women, Christmas, dancing, desires and so on. In this section, we will utilize an unsupervised machine learning technique to automatically identify the major topics sung about in the songs. This technique is done using the LDA (Latent Dirichlet Allocation) algorithm.
 
 ```{r}
+#create a dtm object to use lda algorithm
 songs_dtm <- songs_en_filtered %>% 
   select(-lang) %>% 
   filter(!word %in% vocal_sounds) %>% 
@@ -857,6 +893,7 @@ songs_dtm
 In order to use this algorithm, we first need to convert the data frame into DTM (document term matrix) format. We will use the data frame that has stop words filtered out and we will eliminate the vocal sounds in sequence as these words are present in most songs and scantly contribute to the meaning of the lyrics. Furthermore, since we are analyzing the lyrics of all songs for all 5 years, we will keep only unique songs as some songs stay in the top charts for multiple years and consequently would make a lot of words redundant. After this, we count the words by song name and then convert the data frame into the DTM format using `cast_dtm()`. We can see that the object has high sparsity, which is a good sign as it means the vocabulary used in the data frame is rich and it validates the fact that there is variety within the songs.
 
 ```{r}
+#LDA object with 4 topics
 songs_lda_4 <- LDA(songs_dtm, k = 4, control = list(seed = 507))
 
 songs_topics_4 <- tidy(songs_lda_4, matrix = "beta")
@@ -866,12 +903,14 @@ songs_topics_4
 Next, we convert the DTM object into an LDA object with `LDA()` function. Since we do not know how many themes or topics there are, we will start setting the number of objects as 4 then adjust as we perform the analysis. Here, we will analyze the word-topic probabilities using the `tidy()` method with matrix parameter set at "beta". In other words, the algorithm will look at the content of the data set and automatically assign probability of a word belonging to a topic. The resulting data frame is a table with the terms and topics they belong to along with the probability. We will visualize this into a graph for better interpretation.
 
 ```{r}
+#top 10 terms related to the 4 topics
 songs_top_terms_4 <- songs_topics_4 %>%
   group_by(topic) %>%
   slice_max(beta, n = 10) %>% 
   ungroup() %>%
   arrange(topic, -beta)
 
+#visualize
 songs_top_terms_4 %>% 
   mutate(term = reorder_within(term, beta, topic)) %>%
   ggplot(aes(beta, term, fill = factor(topic))) +
@@ -885,6 +924,7 @@ Setting at 4 topics, we see that it is not exactly clear what each topic is. The
 Since the topics are still not clear. We will extend the setting into 6 topics to see whether we can detect more specific topics.
 
 ```{r}
+#LDA objects with 6 topics
 songs_lda_6 <- LDA(songs_dtm, k = 6, control = list(seed = 507))
 
 songs_topics_6 <- tidy(songs_lda_6, matrix = "beta")
@@ -912,6 +952,7 @@ We, therefore, conclude with the setting of 4 important topics of the most popul
 Using this model of 4 topics, we can check to which topic the top song of each year pertain. From this we can see whether choosing to sing about a certain topic might make a difference between getting into top 100 and getting the first position of the chart.
 
 ```{r}
+#topic-word probabilities with 4 topics for top song of each year
 tidy(songs_lda_4, matrix = "gamma") %>% 
   inner_join(filter(songs_en, position == 1), by = join_by("document" == "song_name"), keep = TRUE) %>% 
   select(-song_name, -lyrics) %>% 
@@ -925,6 +966,7 @@ Setting parameter "matrix" at "gamma", we obtain a table of songs with the proba
 From this, we see that the top songs pertain to a more upbeat, charming, or sentimental passion theme. We also saw from before that these songs contain less profanity, are either sentimental, metaphorical, or energetic. Perhaps, these are the ingredients for making top songs in the modern pop culture. We can further extend this analysis to include songs from top 10 for each year to examine this idea.
 
 ```{r}
+#visualize count of each of the 4 topic on the top 10 song of each year
 tidy(songs_lda_4, matrix = "gamma") %>% 
   inner_join(filter(songs_en, position <= 10), by = join_by("document" == "song_name"), keep = TRUE) %>% 
   select(-song_name, -lyrics) %>% 
