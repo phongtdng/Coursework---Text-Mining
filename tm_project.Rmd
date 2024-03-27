@@ -7,11 +7,11 @@ output: html_document
 
 # Introduction
 
-The last 5 years have been eventful around the world. From Brexit in 2019, to the global spread of COVID-19 in 2020, the 2020 Olympic game in 2021, the Russia-Ukrain war in 2022, and the recent record of global temperature in 2023, these are just a few major events that happened. Undoubtedly, many of these events have left a permanent mark in the mind of people, some even changed their behaviors everlastingly. Different people respond differently to these events and changes. In this project, we will explore this reaction through the lens of pop music.
+The last 5 years have been eventful around the world. From the tumult of Brexit in 2019, to the global spread of COVID-19 pandemic in 2020, followed by respite of the 2020 Olympic game in 2021, the Russia-Ukrain conflict in 2022, and the recent record of global temperature in 2023, each year has been marked by events that have left an indelible imprint on society. These occurrences have not only shaped our external environment but have also influenced individual perceptions, behaviors, and emotional responses.
 
-Pop culture has always been an important device that mirrors societal attitude and expression. One powerful tool that portrays well the influence of pop culture on the public is music. Music reflects well emotions and belief of people. By examining the general's choice of pop songs, we can obtain valuable insights on cultural trends and collective sentiments of the society.
+Agaisnt this backdrop of changes and upheavals, pop music emerges as a reflection of societal attitudes, emotion, and values. With its universal appeal, pop music serves as a powerful medium that portrays well the influence of pop culture on the public and their collective sentiments. By delving into the lyrical content of popular songs, we can uncover valuable insights on the emotional landscapes and prevailing themes that resonate with the music community.
 
-In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of the community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large part of the music community.
+In this analysis, we will analyse lyrics of the top popular songs from 2019 to 2023. These songs are curated from Billboard annual top 100 singles. It is acknowledged that this selection may not capture the entire spectrum of musical preferences of all music listeners. Nonetheless, it still offers a representative impression of into the prevalent cultural mood. Through different techniques, including sentiment analysis, term frequency analysis, n-grams, and topic modelling, we seek to decipher the emotional experiences, societal concerns, and underlying narratives that define the common musical expression in this time period.
 
 # Library
 
@@ -45,9 +45,9 @@ Note: the package `geniusr` is an R package for using Genius API. The package is
 
 # Data Collection
 
-The Billboard Year End Hot 100 singles compiles the top performing singles of the United States based on both physical and digital sales. Although the charts are posted on the website of Billboard, in this analysis, we are getting the data from Wikipedia since it has a much better format for scraping the data and it is open-source. We begin the data collection process by making a test scrape for the year 2023.
+The Billboard Year End Hot 100 singles compiles the top performing singles of the United States, considering both physical and digital sales. Although the charts are posted on the website of Billboard, in this analysis, we will get the information from Wikipedia since it has a more convenient format for scraping and it is open-source platform. To commence the data collection process, we can run a test scrape for the year 2023 and later scale to all the interested years.
 
-**Important**: the lyrics collection process takes a lot of time (around 30 min). The data set is already provided and this section can be skipped to Data Cleaning.
+**Important**: the lyrics collection process is a time-intensive task (around 30 minutes long). As such, the data set has already been provided and this step can be skipped directly to the Data Cleaning section.
 
 ## Test Scrape 2023
 
@@ -97,7 +97,7 @@ all_top_songs <- map_dfr(years, get_top_songs)
 all_top_songs
 ```
 
-The final data frame has 500 rows, which is in accordant to 5 charts of the 5 years period (2019-2023) so the scraping should have gone correctly. The next step will be to get the lyrics for these songs in order to create a complete data frame. We will use Genius API to get the songs' information and lyrics. We will use the library `geniusr` which facilitates the use of Genius API.
+The final data frame has 500 rows, aligning with the 5 charts of the 5 years period (2019-2023). This indicates that the scraping process has run successfully and accurately. Our next objective is getting the lyrics of these songs in order to create a complete data frame. We will use Genius API to get the songs' information and lyrics. We will use the library `geniusr` which facilitates the use of Genius API.
 
 **Important**: To reproduce this report using `geniusr` package, it is important to follow these steps from the guide of the package:
 
@@ -107,7 +107,7 @@ The final data frame has 500 rows, which is in accordant to 5 charts of the 5 ye
 
 The full guide to the `geniusr` package is on this [GitHub page](https://github.com/ewenme/geniusr?tab=readme-ov-file)
 
-Again, the data set is already provided but for reproduction of the data collection process, un-comment the code lines and run.
+Again, the data set is already provided and this can be skipped. To reproduce the data collection process, un-comment the code lines and run.
 
 ## Get Lyrics
 
@@ -157,7 +157,7 @@ all_songs_lyrics <- all_songs_lyrics %>%
   filter(!song_name %in% wrong_lyrics) 
 ```
 
-The lyrics scraped are not perfect because some searches returned id of a remix of the song or a different language version of the song. Therefore, we have to find and clean them. After going through the lyrics of 500 songs, I found 3 songs with faulty lyrics. I decided to exclude them from the list since at this point I had already reached the limit from Genius API.
+The lyrics scraped were not perfect because some searches returned id of a remix of the song or a different language version of the song. Therefore, we have to identify and clean them. Upon examining the lyrics of these 500 songs, 3 songs with faulty lyrics were found and excluded from the list since, at this point, the limit of queries allowed from Genius API has already been reached.
 
 ```{r}
 songs_en <- all_songs_lyrics %>% 
@@ -167,7 +167,7 @@ songs_en <- all_songs_lyrics %>%
   filter(lang == "en")
 ```
 
-There are 25 songs in other languages than English so we either have to exclude them or translate them into English for the analysis method that we will use in this project. The detection was done by the `cld3` package - a neural network model for language identification. It was mentioned that the version used at the time of this project was still experimental so reproduction might produce different results. Another option to do this task could be using DeepL API. The package `deeplr` is available to facilitate the use of DeepL API and has functions for detecting and translating languages. However, DeepL free API is extremely limited and subscription is expensive. Therefore, for the scope of this project, we will use `cld3` package and exclude songs that are not in English.
+Out of all the songs, there are 25 songs in languages other than English. We either have to exclude them or translate them into English for the chosen analysis method of this analysis. This language detection was done using the `cld3` package - a neural network model for language identification. It was mentioned that the version used at the time of this project was still experimental so reproduction might produce different results. Another option to do this task could be using DeepL API. The package `deeplr` is available to facilitate the use of DeepL API and has functions for detecting and translating languages. However, DeepL free API is extremely limited and subscription is expensive. Therefore, for the scope of this project, we will use `cld3` package and exclude songs that are not in English.
 
 # Split and Tokenize
 
@@ -176,7 +176,9 @@ songs_en_st <- songs_en %>%
   unnest_tokens(word, lyrics)
 ```
 
-As per usual with most case of analysing songs of pop culture, there are many potential issues for the analysis with the word used in these songs. In our case, there are many slang words that are not recorded in the dictionary and words that are sang differently for the purpose of rhyming or simply style. Some examples of these words are "nothing" becoming "nothin", "fighting" becoming "fightin", and so on. We will try to clean these as much as possible but it is frankly very messy to handle. There are packages that can help correcting the misspelling (e.g., `textclean`, `hunspell`) but these are usually not accurate for slang and words from pop culture. Stemming and lemmatization can help but at the same time might take away valuable information or incorrectly stem or lemmatize (for example, some packages reduce "is" to "i" or give errors to slang and words related to pop or internet cluture).
+As is often when analyzing songs from pop culture, there are numerous potential issues for the analysis with the words used in these songs. In our case, there are many slang words that are not recorded in dictionaries as well as variations in pronunciation used for rhyming or stylistic purposes. Some examples of these words are "nothing" becoming "nothin", "fighting" becoming "fightin", and so on.
+
+We will try to clean these as much as possible but it is important to acknowledge that the task can be quite complex and messy. There are packages that can help correcting the misspelling (e.g., `textclean`, `hunspell`) but these are usually not accurate for slang and words specific to pop culture. Stemming and lemmatization techniques can help, but they also run the risk of inadvertently removing valuable information or incorrectly stemming or lemmatizing words (for example, some packages reduce "is" to "i" or give errors to slang and words related to pop or internet culture).
 
 ```{r}
 misspelling_dict <- songs_en_st %>% 
@@ -195,7 +197,7 @@ misspelling_dict <- songs_en_st %>%
 misspelling_dict
 ```
 
-We will create a dictionary for misspelled words from the songs' lyrics of the data set. We will use the `hunspell` package for identifying the misspelling. Most of the identified misspelled words are either verbs ending in "ing" (present participle or gerund) and names or words from other languages or slang. Since names and pop culture words contribute meaning to the song and are not entirely affected by the analysis, we will only correct the verb-ing words so later they can be identified by the lexicons. This was done by detecting misspelled words ending with "in" then adding "g" to the of the word. They are checked again by the `hunspell_check` to filter out other words that also end with "in" but are not verb-ings.
+To address the issue of misspelled words within the song lyrics data set, we will use the `hunspell` package to identify these spelling errors. We can observe that most of the identified misspelled words are either verbs ending in "ing" (present participle or gerund) and names or words from other languages or slang. Since names and pop culture words contribute meaning to the song and are not entirely affected by the analysis, we will only correct the verb-ing words so they can be identified by the lexicons used in the subsequent section. To achieve this, we initially detect misspelled words ending with "in" and subsequently append "g" to the of the word. They are checked again by the `hunspell_check` to filter out other words that also end with "in" but are not verb-ings.
 
 ```{r}
 songs_cleaned <- songs_en_st %>% 
@@ -207,7 +209,7 @@ songs_cleaned <- songs_en_st %>%
 songs_cleaned
 ```
 
-We prepare the final, cleaned version of the data set by joining the misspelling dictionary data frame with the original data frame then create a new column that takes the correction form of misspelled words and original form if they are not in the dictionary.
+We consolidate the final, cleaned version of the dataset by joining the misspelling dictionary data frame with the original data frame. We then create a new column wherein misspelled words are replaced with the corrected form, while original words remain unchanged if not found in the dictionary.
 
 # Filter Stop Words
 
@@ -220,7 +222,9 @@ songs_en_filtered
 
 # Lexicon-based Sentiment Analysis
 
-In the following section, we will explore the sentimental themes of the popular songs from 2019 to 2023 to uncover insights about music listeners, as least for the pop culture, and how they relate or reflect the phenomena happening during these years. Since the uneventful arrival of COVID-19, there was a range of emotions displayed on social media, news, and public opinion sharing platforms. The pandemic claimed many lives and forced most countries into isolating people, thus, we could expect a rise in more negative songs about loneliness or sadness. It is also possible that songs about courage and felicity will rise instead as people try to cope by listening to positive songs.
+In the following section, we will explore the sentimental themes prevalent in the popular songs spanning from 2019 to 2023. Our aim is to uncover insights into the sentiments of music listeners and whether they relate or reflect the events that unfolded during these years.
+
+Numerous adverse events happened during this period, including the COVID-19 pandemic and ongoing conflicts between countries. This leads us to anticipate an increase in songs reflecting themes of loneliness or sadness. However, there is also potential for an emergence of songs with themes of courage and happiness. It is plausible that listeners might turn into uplifting music as a means of coping and finding solace during the tough times.
 
 ```{r}
 #create data set with sentiment values using bing
@@ -279,13 +283,13 @@ oty %>%
   facet_wrap(~method, ncol = 1, scales = "free_y")
 ```
 
-Although the 2 lexicons give different results on the overall sentiment of songs, they both seem to be in accordance on the rise and fall of negative and positive songs after 2020. In 2021, the number of negative songs rose while the number of negative songs plummeted. This trend, however, reserved from 2021 to 2023, where negative songs start to ascend and the positive songs went down in number. From 2019 to 2020, it seems that using "bing" gives us a fall in negative songs and an increase in positive songs but with "afinn" this pattern is inverted. Despite the difference in trend, the increase or decrease are relatively small for both graphs. Both also agree on the little number of neutral songs, which is perfectly normal for music since songs tend to express a lot of emotions.
+Although the 2 lexicons yield divergent results regarding the overall sentiment of songs, they both appear to concur on the fluctuation of negative and positive songs post-2020. In 2021, the number of positive songs rose while the number of negative songs plummeted. This trend, however, reserved from 2021 to 2023, with negative songs starting to ascend and the positive songs dwindling. From 2019 to 2020, it seems that using "bing" gives us a fall in negative songs and an increase in positive songs but with "afinn" this pattern is inverted. Despite the difference in trend, the increase or decrease are relatively minor in both graphs. Furthermore, both lexicons also agree on the minimal number of neutral songs, which aligns with the nature music, as songs tend to express a lot of emotions.
 
-It is difficult to determine whether our initial or second hypothesis about the music listening trend during the pandemic was correct since the 2 lexicons produced different results for the period 2019 to 2020. The number of negative songs outweighed the number of positive songs but it is unclear whether it is a perpetual trend with pop culture or a singular phenomena within this period. However, the trend after 2020 tells a much clearer story. The COVID-19 pandemic started around December 2019 and began to spread worldwide in early 2020. Following this pandemic was a series of lock down in populated cities and was lifted after mid 2021 for the majority of places. The end of the quarantine allowed reunion between loved ones and represented a signal of the waned sign of COVID-19. Thus, this gave rise to celebration and positive sentiments, which seem to be reflected accordingly in the graphs. The graphs then show a surge of popularity of negative songs in 2022 and 2023. This could reflect the sentiment against the series of misfortune events that happened such as the war in Ukraine, the sharp rise of inflation, and various droughts and floods in many regions.
+It is challenging to determine whether our initial or latter hypothesis about the music listening trend was correct since the 2 lexicons produced disparate results for the period 2019 to 2020. Although number of negative songs outweighed the number of positive songs, it remains uncertain whether this represents a perpetual trend within pop culture or a singular phenomena specific to this period. However, the trend after 2020 offers greater clarity. The COVID-19 pandemic started around December 2019 and began to spread worldwide in early 2020. Following this pandemic was a series of lock down in populated cities and was lifted after mid 2021 for the majority of places. The end of the quarantine allowed reunion between loved ones and represented a signal of the waned sign of COVID-19. Thus, this gave rise to celebration and positive sentiments, which seem to be reflected accordingly in the graphs. The graphs then show a surge of popularity of negative songs in 2022 and 2023. This could reflect the sentiment against the series of misfortune events that happened such as the conflict of Russia and Ukraine, soaring inflation rate, and various droughts and floods in many regions, etc.
 
 ## Most common positive and negative words
 
-We learned before that some songs could be extremely negative while very positive songs do not contain as many positive words. There also seems to be a permanent trend of pop culture in that negative songs dominate in number in the charts in all years. We will explore more the vocabulary used in the songs to understand more why these phenomena happen.
+Previously, we learned that some songs could exhibit extreme negativity while very positive songs do not contain as abundant positive words. Additionally, there seems to be a trend of pop culture where negative songs dominate in number in the charts in all years. We will explore deeper into the vocabulary used in the songs to understand better the underlying reasons of these phenomena.
 
 ```{r}
 #count words to find top used words
@@ -302,11 +306,11 @@ ggplot(common_words_bing %>% filter(n > 50)) +
   ylab("count")
 ```
 
-It seems that positive words concentrates on the word "love" while negative words spread out on various words. The majority of the negative word use is curse words. However, some of these words can carry different sentimental notation other than negative depending on the context in which it is used. For example, "shit" and "damn" could be an affirmation of positive feeling when paired with words like "good". We will analyse this on a deeper level in another section.
+It seems that positive words concentrates on the word "love" whereas negative words spread out on various terms. The majority of the negative word use is curse words, however, it is worth noting that some of these words can carry different sentimental notation other than negative depending on the context in which they are used. For example, "shit" and "damn" could be an affirmation of positive feeling when paired with words like "good". We will subsequently analyze this phenomenon on a deeper level in another section.
 
-Some interesting negative words are "miss", "lost", "lonely", "die". Although they are common terminologies that are used in various situations, they are very related to the mishaps of the major events that happened during this time period. The prolonged quarantines could be a reason why "miss" and "lonely" got in the top popular words in the songs and the deaths due to COVID-19 and the wars might have contributed to the high use of "lost" and "die".
+Among the negative words identified, some interesting negative words are "miss", "lost", "lonely", "die". Although they are common terminologies that are used in various situations, they are highly related to the mishaps of the major events that happened during this time period. For instance, the prolonged quarantines may have contributed to the popularity of the words "miss" and "lonely" while the toll of COVID-19 and the wars might have accounted for the hightened use of "lost" and "die".
 
-On the positive chart, the words seem quite common and general. We were expecting more words that indicate hope or courage but they did not make it to the top here.
+Conversely, the positive word chart features words that are quite commonplace and general. It was initially anticipated with more words that indicate hope or courage but they did not show up here.
 
 ```{r}
 #count words to find top used words
@@ -347,7 +351,9 @@ ggplot(common_words_by_year_bing %>% filter(n> 30)) +
   ylab("frequency")
 ```
 
-Looking by the year, it seems that there are some evidence supporting our earlier hypothesis. In 2020 and 2021, "lonely" and "miss" are in the top common words used in these popular songs. This could suggest that the pandemic and the lock down produced some nostalgic effect for people. Some words like "love", "shit", "bitch", "fuck" seem to be time-less, in that they appear in all years. It is also interesting that in 2019 and 2020, usage of sentimental words seemed to spread out more while from 2021 to 2023, and especially in 2022, certain words are overly repeated. Perhaps, 2022 was not a very creative year in song writing. Finally, although using "afinn" gives longer list of top words, their pattern are similar to using "bing". The results of using lexicon affin are displayed below.
+Upon examining the data year by year, it seems that there is evidence supporting our earlier hypothesis. In 2020 and 2021, the words "lonely" and "miss" rank in the top common words used in the popular songs. This could suggest that the pandemic and the lock down produced some nostalgic effect for people. Additionally, some words like "love", "shit", "bitch", "fuck" seem to be time-less, in that they consistently appear in all years.
+
+It is also interesting that in 2019 and 2020, usage of sentimental words seemed to spread out more while from 2021 to 2023, and especially in 2022, certain words are overly repeated. Perhaps, 2022 was not a very creative year in song writing. Finally, although using "afinn" gives longer list of top words, their pattern are similar to using "bing". The results of using lexicon affin are displayed below.
 
 ```{r}
 #count word by years
@@ -387,9 +393,9 @@ ggplot(top_songs_bing) +
   ylab("frequency")
 ```
 
-We have seen the over sentiments of all songs previously, perhaps the top songs might convey different emotions than the rest that make them stand out more. We will look at this by filtering out the data set to have only songs at the first position in the chart.
+Having previously examined the overall sentiments expressed in all songs, it is worth exploring whether the top songs convey distinct emotions that set them apart. To investigate this, we will narrow down our dataset to include only songs that held the first position in the charts.
 
-For the top songs, there are positive words in common to all songs such as "love", "loving", "trust" and "woo". However, we also see some more specific and more positive words such as "happier", "perfect", "perfectly", and "glitter". On the negative side, they also use profanity such as "shit" and "hell". "shimmer" seems to be considered negative in bing lexicon but the word's definition does not exactly coincide so we will not consider it. It is interesting, however, that the negative words are also more specific and deeper such as "drowning" and "cold".
+For the top songs, there are positive words in common to all songs such as "love", "loving", "trust" and "woo". However, we also see some more specific and more intensely positive words such as "happier", "perfect", "perfectly", and "glitter". On the negative word graph, they also use profanity such as "shit" and "hell". "shimmer" seems to be considered negative in bing lexicon but the word's definition does not exactly coincide so we will not consider it. Notably, however, the negative words are also more nuanced and profound with words such as "drowning" and "cold".
 
 ```{r}
 #assign sentiments for only songs at 1st position of the chart
@@ -418,7 +424,7 @@ For now, it is still unclear what topics that the songs sing about. We have only
 
 ## Top Artists
 
-We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
+We have observed that some artists demonstrate a tendency for either very negative or positive sentiments in their song. We have also seen before that negative songs seem to dominate in popularity in the pop charts. This raises a question of whehter this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs. We can investigate this hypothesis by examining the top artists that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
 
 ```{r}
 #make a data frame of top 10 artists (with most songs in the charts) of the period
@@ -440,75 +446,11 @@ artists_sa %>% ggplot() +
   ylab("number of songs")
 ```
 
-Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
-
-## Bonus: Most positive vs most negative songs
-
-```{r}
-#most positive songs from each year
-most_pos <- sa_df_afinn %>% 
-  group_by(year) %>% 
-  slice_max(sentiment)
-
-#most negative songs from each year
-most_neg <- sa_df_afinn %>% 
-  group_by(year) %>% 
-  slice_min(sentiment)
-
-#visualize
-ggplot() +
-  geom_col(data = most_pos, aes(year, sentiment), fill = "orange") +
-  geom_col(data = most_neg, aes(year, sentiment), fill = "blue") +
-  coord_flip() +
-  geom_text(data = most_pos, aes(x = year, y = 0, label = song_name), 
-            hjust = "left", nudge_y = 5) +
-  geom_text(data = most_neg, aes(x = year, y = 0, label = song_name), 
-            hjust = "right", nudge_y = -5)
-```
-
-We have seen from the previous section the most common positive and negative words throughout 2019 to 2023 and also in each year. We will now look into the songs with the highest positive and negative net scores to see the development of emotional ranges in this time period. Like we saw in the beginning, the top most negative song had a much higher score than the most positive song. We can see that it applies for almost all of the years with the exception of 2020 where both songs have similar scores. The peak of positivity seems to dwindle after 2020 while for negativity it fluctuates. We can look into the lyrics of these songs to paint a clearer picture of the story they might be telling.
-
-```{r}
-#visualise words with highest count for each of the positive songs
-songs_en_filtered %>% 
-  filter(song_name %in% most_pos$song_name) %>% 
-  group_by(song_name) %>% 
-  count(word) %>% 
-  slice_max(n, n = 10) %>%
-  ungroup() %>% 
-  ggplot(aes(n, reorder(word, n))) +
-  geom_col() +
-  facet_wrap(~song_name, scales = "free_y") +
-  xlab("frequency") +
-  ylab("word")
-```
-
-From looking at the top most frequent words of these songs, it seems that some common themes are love ("Flowers" and "Lose You to Love Me") and beauty ("Beautiful" and "Way 2 Sexy"). "To the Moon" seems to have more of catchy, positive sounds like "yeah" and "ha" without a clear story.
-
-Love is a compelling theme for powerful sentiments, it can be either really positive but also really negative. "Flowers" carries a lot of nostalgic notions with words like "remembered", "wanna", and seems to have a vivid story with action words like "cry", "write", "talk", "dancing", "leave", "hold" and "hands", coupled with nouns like "sand", "hours", "flowers". The whole lyrics of song portray clearly an overcome of a sad past romance and a new focus on self-love so it makes sense that the song has a positive net score of sentiment. "Lose You to Love Me", on the other hand, seems to have gotten a high score on positiveness due to high frequency of the word "love" and "yeah". From the name of the song and words like "promised", "fell", and "adored" being used in past tense make a clear story of moving on from a past loving relationship. However, other top appearing words like "hate", "burn", "killing, and "fires" could suggest a less positive overall sentiment that was compensated by high frequency of the positive score of "love" and "yeah". To further understand the stories of the songs, we would need to analyse pairs and groups of words, which will be detailed in later sections.
-
-"Beautiful" and "Way 2 Sexy" are also in the same theme but seem to differ in their message. "Beautiful" seems to convey a clearer positivity with use of words such as "angel", "amazing", coupling with words like "naked" and "imperfections", which probably talks about beauty despite flaws. "Way 2 Sexy", however, seems to have gotten a high score on positiveness due to repeated use of words like "sexy", "yeah", and "woah". The rest of the top words seem to talk about "fame", money ("cash"), and convey a more materialistic message with "ice", "chain", and "bags". The song certainly could be positive overall but further look at word pairs and groups would make the message of the song clearer.
-
-```{r}
-#visualise words with highest count for each of the negative songs
-songs_en_filtered %>% 
-  filter(song_name %in% most_neg$song_name) %>% 
-  group_by(song_name) %>% 
-  count(word) %>% 
-  slice_max(n, n = 10) %>%
-  ungroup() %>% 
-  ggplot(aes(n, reorder(word, n))) +
-  geom_col() +
-  facet_wrap(~song_name, scales = "free_y") +
-  xlab("frequency") +
-  ylab("word")
-```
-
-The negative songs, on the other hands, portray a very vague story with their most frequent words. Most of these words are swear words and carry little meaning by themselves. "Blueberry Faygo" is the only song of the 5 that has high diversity of top words and sequentially gives us more information about the song's topics. With words like "shooting", "poured", "millions", and named entities "draco" and "blueberry faygo", it is probably that the songs sings about living this certain kind of lifestyle with "draco" as an important figure, perhaps one of the singers or producers of the song, and "blueberry faygo" as a metaphor for certain thing about this lifestyle. Like stated previously, it is conceivably better to analyse these songs by pair or word groups to understand more what the topic or message of these songs is.
+Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a predilection for negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
 
 # Term Frequency Analysis
 
-From the sentiment analysis, we learned that the pop culture seems to favor negative words, particularly profanity. Some of the words in these popular songs, both positive and negative, seem to have long tail tendency with some common words topping the chart of frequency. We also looked at some top sentiment words of songs to understand what emotional message that the songs tried to deliver. Finally, we learned that the majority of the top artists in the music charts made it to the peak by writing more negative songs. In this section, we will dive deeper into the content of the songs to discover what are the common objects of attention in the pop music community.
+Based on our sentiment analysis, it is evident that the pop culture tends to gravitate towards the use of negative words, particularly profanity. We also looked at some top sentiment words of songs to understand what emotional message that the songs tried to convey. Finally, we discovered that the majority of the top artists in the music charts achieved their success by singing songs with more negative themes. In this section, we will dive deeper into the content of the songs to discover what the common objects of attention in the pop music community are.
 
 ## Word Count
 
@@ -529,7 +471,7 @@ ggplot(song_words) +
   ylab("Frequency")
 ```
 
-Most songs tend to be around 3 to 4 minutes in length. This is due to how vinyls were made in the 1800s and 1900s, which limited the the length of music that can be written onto them ([Vox](https://www.vox.com/2014/8/18/6003271/why-are-songs-3-minutes-long)). Vox also explained that although the evolution of technology allowed songs to recorded for a longer period of time, the radio and digital media industry influenced music to stay short in order to be able to be enter the mainstream.
+Most songs tend to be around 3 to 4 minutes in length. This is due to how vinyls were made in the 1800s and 1900s, which limited the the length of music that can be written onto them (from the article of [Vox](https://www.vox.com/2014/8/18/6003271/why-are-songs-3-minutes-long)). The article also explained that although the evolution of technology allowed songs to recorded for a longer period of time, the radio and digital media industry influenced music to stay short in order to be able to be enter the mainstream.
 
 Undoubtedly, with limited amount of time, the length of songs' lyrics also stay within a certain range. We can see this from the graph above. Most songs tend to have around 300 to 600 words. Top 10 songs are also mostly in this range. Thus, we can hypothesize that lengthy and wordy songs might have less chances of making it to the top 10.
 
@@ -563,7 +505,7 @@ ggplot(song_words, aes(term_freq)) +
   facet_wrap(~year, scales = "free_y")
 ```
 
-We can also confirm that this phenomenon is steady throughout each year by looking at the graph above of the word distribution by year. So, some words have higher frequency compared to the rest. By looking at them, we can better understand the important words of a song and consequently what the song is about. We will next analyze the term frequency for each year to find out the words the characterize them.
+We can also ascertain that this phenomenon is steady throughout the years by looking at the graph above of the word distribution year by year. It is evident that words have higher frequency compared to the rest. By looking at them, we can better understand the important words of a song and consequently what the song is about. We will next analyze the term frequency for each year to identify words that characterize them.
 
 ```{r}
 #filter top 10 words with highest term frequency for each year
@@ -599,7 +541,7 @@ ggplot(top_term) +
   facet_wrap(~year, scales = "free_y")
 ```
 
-After weeding out the vocal sounds, we can see that there are some common themes that characterize the top songs for each year. "i" and "you" appear in all years, suggesting that the top songs tend to have a first person perspective. This could make the song more personal and better connect with the listeners. The context of the songs, however, are still quite hazy and not distinctive enough to draw conclusions on the relevant topics of the years. We will now compute the inverse document frequency to combat this issue.
+After eliminating the vocal sounds, we can see that there are some common themes that characterize the top songs for each year. "i" and "you" appear in all years, suggesting that the top songs tend to have a first person perspective. This could make the song more personal and better connect with the listeners. The context of the songs, however, remain hazy and not distinctive enough to draw conclusions on the relevant topics of the years. We will now compute the inverse document frequency to address this issue.
 
 ```{r}
 #some songs are in the top charts for several years and tf-idf do not work with group() so we will create a function to do this per year
@@ -627,9 +569,11 @@ songs_tf_idf %>%
 
 Some songs are present in the top 100 charts in multiple years, which will create issue when using the function `bind_tf_idf()` (giving negative idf values). Therefore, we will need to group them by year. However, the function `bind_tf_idf()` ignores groups so we have to do it separately. In the code, a helper function was created which takes our original data frame of words with count and filters it by an input year and the meaningless sounds, then finally creates new "tf", "idf", and "tf_idf" columns with `bind_tf_idf()`. The output of this function is a data frame of songs and their filtered words for one year. We then use the function `map_dfr()` to apply the function on an array of years to ultimately obtain a data frame of songs with "tf", "idf", and "tf_idf" values that are grouped by year.
 
-We see that although each year some words stand out more than other, we can still detect some popular theme for all years. For example, there is a tendency towards including a woman figure in the songs with words such as "girlfriend", "roxanne", "woman", "she" and "gaga". Words about intoxication are also very relevant in the recent years with the appearance of "tripping", " margarita", and " wasted". Relationship is also one theme that is distinguished from the appearance of words such as "girlfriend", "heartless", and "heartbreak". Words like "hopes", "lord", "amen", "holy", and "karma" also signify the importance of faith or spiritual belief. These themes are, perhaps, not only important for the recent years but have been dominant throughout history in music and other literature. They tend to invoke emotions that people are naturally drawn to and therefore do not surprisingly come as important topics.
+We observe that although some words stand out more prominently than other in each year, we can still discern some recurring themes that persist across all years. For example, there is a inclination towards incorporating a woman figure in the songs with words such as "girlfriend", "roxanne", "woman", and "she". Words about intoxication are also very relevant in the recent years with the appearance of "tripping", " margarita", and " wasted". Romance is also one theme that is distinguished from the appearance of words such as "girlfriend", "heartless", and "heartbreak". Words like "hopes", "lord", "amen", "holy", and "karma" also signify the importance of faith or spiritual belief.
 
-It is also important to point out that from 2021 to 2023, Christmas songs seem to make a come back to the top as words like "christmas", "jolly", "holly", "jingle" and "bell". Christmas is centered around reunions with family and friends, something of which people were deprived during the series of lock down due to the pandemic. Thus, it is possible as the pandemic subsided, people started to be in the mood again for the holidays, which they could then enjoy without restriction.
+These themes, while prevalent in recent years, have persisted as central motifs throughout the history of music and other literature. They tap into emotions that resonate deeply with people and therefore do not surprisingly come as important topics.
+
+It is also important to point out that from 2021 to 2023, Christmas songs seem to make a come back to the top as words like "christmas", "jolly", "holly", "jingle" and "bell". Christmas is centered around reunions with family and friends, something of which people were deprived during the series of lock down due to the pandemic. Thus, it is possible as the pandemic subsided, people are spirited to embrace the holidays once again as they could then enjoy without the constraints of restrictions.
 
 ## Top songs
 
@@ -646,9 +590,9 @@ songs_tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-From the sentiment analysis, we learned that the top songs stand out by employing more specific and emotional words. We can learn more about their objects of attention by looking at the top tf-idf values of each song.
+From the sentiment analysis, we have learned that the top songs stand out by employing more nuanced and emotional words. We can learn more about their focal points by examining the top tf-idf values of each song.
 
-The top song in 2019 seems to sing about riding horses on an old town road. This is probably metaphorical for something else, which we can explore later by looking at pairs and groups of words. The song also contains words like "nothing" and "nobody" so there is a possibility that the song means to sing about the state of being alone or different from the rest. Connecting with the previous context on an old town road, perhaps, the singer implies about how they are different now than the people of the place they are from.
+The top song in 2019 seems to sing about riding horses on an old town road. This is probably metaphorical, which we can try to decipher later by looking at pairs and groups of words. The song also contains words like "nothing" and "nobody" so there is a possibility that the song means to sing about the state of being alone or different from the rest. Connecting with the previous context on an old town road, perhaps, the singer implies a narrative of transformation from their origin.
 
 Next, in 2020, it seems to be more of a sad song through words like "blinded", "empty", and "drowning". Probable context for "blinded" is "blinded" by the "city's" "lights". Words such as "empty", "drowning", "sleep", "trust" and "touch" could imply a romantic or sensual affair that turned stale.
 
@@ -656,11 +600,11 @@ The top song in 2021 seems, however, to be a more energetic, fun, and positive s
 
 2022's top song seems to have a summer vibe with top words being "heat", "waves", "june". It is not, however, about enjoying the summer because the words are quite intense and bear some discomforting feelings. The song also sings about "middle" and "nights" where the singer might "sometimes" "think" "about" something and have a "vision".
 
-Finally, 2023 was topped by a seemingly sad song about romance. There is a clear narrative of at least 2 people involved as the song uses a lot of "we" and "our". There is also verbal exchange with words like "telling" and "said". Nostalgia is also a topic of the song with "remember" and this seems to be invoked through "liquor".
+Finally, 2023 was topped by a seemingly sad song about romance. There is a clear narrative of at least 2 people involved as the song uses a lot of "we" and "our". It also potentially feature dialogues with words like "telling" and "said". Nostalgic collections are also a topic of the song with words like "remember" which seems to be invoked through "liquor".
 
 # N-grams
 
-We have explored the sentimental and possible themes of the top songs from 2019 to 2023 but the story they tell is still a bit hazy. Pop songs are full of metaphors and employ words in artful ways that cannot be simply deciphered by looking at individual words. In this section, we will look at words of the lyrics in pairs and groups and try to connect them in order to get a fuller picture of the songs. We will first look at pairs of words and the look at groups of 3 words to try to understand better what the songs are singing about.
+We have explored the sentimental and possible themes of the top songs from 2019 to 2023 but the story they tell still remains ambiguous. Pop songs often weave in metaphors and employ words in nuanced ways that cannot be simply interpreted through looking at individual words. In this section, we will look at words of the lyrics in pairs and groups and try to connect them in order to get a fuller picture of the songs. The approach will be looking at pairs of words and then groups of 3 words so we can understand better what the meaning embedded within the songs.
 
 ## Bigram
 
@@ -707,7 +651,7 @@ bigram_united <- bigram_filtered %>%
 bigram_united
 ```
 
-Above, we first separate the bigrams into 2 columns of individual words. We then filtered for each columns of rows that contained the stop words and vocal sounds from the list we created before. We then united the words together to have a final data frame similar to the original but with less meaning less bigrams. Now we can explore better the context of the songs.
+Above, we first separate the bigrams into 2 columns of individual words. We then filtered for each columns of rows that contained the stop words and vocal sounds from the list we created before. We then united the words together to have a final data frame similar to the original but with less meaning less bigrams. Now, we can explore better the context of the songs.
 
 ```{r}
 #visualize top bigrams with highest frequency
@@ -723,7 +667,7 @@ bigram_united %>%
   ylab("word")
 ```
 
-It seems that for all the years, slang and profanity are frequently present. We can also see why when we performed sentiment analysis, there was a lot of negativity in the songs but in the actual reality and culture that might not be the case. For example, the word "bitch" carries a negative connotation but when paired with "bad", it might not necessarily mean "bad" but rather have a more positive connotation culturally speaking. Overall, there are still many common pairs that do not paint the full meaning of the songs so we will use tf-idf in order to take them out and shift the focus to more relevant words.
+It seems that across all years, slang and profanity are frequently present. This sheds light on the reason why sentiment analysis yielded abundant negativity in the songs. However, in reality and current culture, this might not be the case. For example, the word "bitch" carries a negative connotation but when paired with "bad", it might not necessarily mean "bad" but rather have a more positive connotation culturally speaking. Overall, there are still many common pairs that do not capture the full meaning of the songs so we will use tf-idf in order to take them out and shift the focus to more relevant words.
 
 ### TF-IDF
 
@@ -767,17 +711,17 @@ ggraph(bigram_for_graph, layout = "fr") +
     geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
 ```
 
-From mapping out the connections and relationships of words, we can see a few clusters that could well represent the trending topics in the recent year.
+From mapping out the connections and relationships of words, we can observe a few clusters that offer insights into the prevailing topics in the recent year.
 
-First, there is a cluster around the word "wanna". So, it is common to sing about desires. The word "wanna" also has the strongest connection with the word "feel", which shows that desire for sentiment is possibly most frequent. There is also a cluster around the word "about", the connections are with "thinking", "talking", and "worried". Although they are words that frequently pair with the preposition "about", it is interesting to point out that "thinking" has the highest connection with "about". This closely relates to the theme of desire that we saw before.
+First, there is a notable cluster around the word "wanna", suggesting a common tendency to sing about desires. The word "wanna" also has the strongest connection with the word "feel", indicating that desire for sentiment is possibly most frequent. There is also a cluster around the word "about", the connections are with "thinking", "talking", and "worried". Although they are words that frequently pair with the preposition "about", it is interesting to point out that "thinking" has the highest connection with "about". This closely relates to the theme of desire and contemplation.
 
-There is a dense cluster around the words "bad" and "bitch". Their neighbors are "bitches", "guy", "habits", "lil", and "ass". We discussed before that there is a trending attitude in the pop culture of being a "bad bitch", this cluster seems to confirm this phenomenon with other similar pairs of "bad" and "bitches", "real" and "ass" and "bitch".
+There is a dense cluster around the words "bad" and "bitch". Their neighbors are "bitches", "guy", "habits", "lil", and "ass". We discussed before that there is a trending attitude in the pop culture of a "bad bitch" persona. This cluster seems to confirm this phenomenon with other similar pairs of "bad" and "bitches", "real" and "ass" and "bitch".
 
 We also see a smaller cluster around "love". It is, however, surrounded by more negative words namely "ruin", "savage", and "lies". There is also another small cluster related to this topic formed by the words "heart", "broken", and "cold". We already learned that romance or love is a common topic. Here, we get a more specific picture of how love is sung about, which is more on the sorrow side. It seems that in the recent years, sad love songs are more dominant than happy ones.
 
 The cluster around "girl" also has some interesting connection. "Hot girl summer" was a trending term on social media and it is also present here. The song(s) containing these words perhaps helped popularized it. "baby" is also a prominent word pair for "girl", which is normal as it is a quite common way that some men address at girls. "freaky", however, also seems a strong connection with "girl". Although this might not be direct sexualization but it could be so implicitly. This is a topic that has a long run in history and it seems to persist in the modern day.
 
-Finally, Christmas seems to be many's favorite as we can see some clusters of the relevant words such as "holly", "jolly", "christmas", and "tree", and "jingle", "bell", and "rock". We have picked up this idea before with tf-idf analysis and saw that this seems to have surged in popularity after 2022.
+Finally, Christmas seems to be many's favorite as we can see some clusters of the relevant words such as "holly", "jolly", "christmas", and "tree", and "jingle", "bell", and "rock". We have noted this before in the tf-idf analysis and saw that it seems to have surged in popularity after 2022.
 
 ## Trigram
 
@@ -870,7 +814,7 @@ It seems that the context of the word use was interpreted correctly. The song in
 
 ## Topic detection
 
-Previously, through sentiment analysis, term frequency analysis, and n-gram analysis, we have detected some common themes that top pop songs from 2019 to 2023 sing about. These are, but not limited to, love, faith, women, Christmas, dancing, desires and so on. In this section, we will utilize an unsupervised machine learning technique to automatically identify the major topics sung about in the songs. This technique is done using the LDA (Latent Dirichlet Allocation) algorithm.
+Previously, through sentiment analysis, term frequency analysis, and n-gram analysis, we have detected some common themes that top pop songs from 2019 to 2023 sing about. These include love, faith, women, Christmas, dancing, desires and more. In this section, we will utilize an unsupervised machine learning technique to automatically identify the major topics sung about in the songs. This technique is done using the LDA (Latent Dirichlet Allocation) algorithm.
 
 ```{r}
 #create a dtm object to use lda algorithm
@@ -919,9 +863,11 @@ songs_top_terms_4 %>%
   scale_y_reordered()
 ```
 
-Setting at 4 topics, we see that it is not exactly clear what each topic is. The words are quite generic and there are a lot of overlaps. This is normal as these songs are pop songs and they tend to gravitate towards the same vocabulary. However, we can still see some patterns in the graph. For example, topic 1 seems to be heavily negative and perhaps materialistic with the word "money". Topic 3 also has many similar words but seems to be more on the sexual front with words like "baby", "girl", "ass", "love". Topic 2 seems to center around passion in an uplifting way with words while topic 4 seems to be about passion but in a more sentimental and charming with words like "feeling" and "beautiful".
+Setting at 4 topics, the delineation between the topics is still not entirely distinct. The words are quite generic and there is a lot of overlaps. This is normal as these songs are pop songs and they tend to gravitate towards the same vocabulary. However, we can still discern some patterns in the graph.
 
-Since the topics are still not clear. We will extend the setting into 6 topics to see whether we can detect more specific topics.
+For example, topic 1 seems to be heavily negative and perhaps materialistic with the word "money". Topic 3 also has many similar words but seems to be more on the sexual content with words like "baby", "girl", "ass", "love". Topic 2 seems to center around passion in an uplifting manner while topic 4 seems to be about passion but more sentimental with words like "feeling" and "beautiful".
+
+Despite the results, the topics are still obscure. We will extend the setting into 6 topics to see whether we can obtain greater clarity.
 
 ```{r}
 #LDA objects with 6 topics
@@ -943,9 +889,9 @@ songs_top_terms_6 %>%
   scale_y_reordered()
 ```
 
-It seems that even when extending to 6 topics, we still do not get a clearer picture. It stays the same that some song sings about passion in various ways and some songs sing contains a lot of sexualization and material oriented. This is not surprising for pop culture as these theme are heavily embedded within the history of modern pop culture.
+It seems that even when extending to 6 topics, they continue to be ambiguous. It remains the same that some song sings about passion in various ways and some songs contains a lot of sexualization and materialism. This could be expected for pop culture as these themes are heavily embedded within the history of modern pop culture.
 
-We, therefore, conclude with the setting of 4 important topics of the most popular songs in the recent years: materialism (topic 1), charm (topic 2), sensual desire (topic 3), and passion (topic 4) .
+We, therefore, conclude with the setting of 4 important topics for the most popular songs in the recent years, which are materialism (topic 1), charm (topic 2), sensual desire (topic 3), and passion (topic 4) .
 
 ## Top songs' topics
 
@@ -981,30 +927,30 @@ tidy(songs_lda_4, matrix = "gamma") %>%
   ylab("topic")
 ```
 
-Including more songs from top 10, we see that topic 2 and topic 4 still dominate. This re-affirms the hypothesis that songs that has lyrics about passion, energy, and charm could be more successful than others. Of course, however, there are still many other elements that determine whether a song is successful, such as the melody, the artist, etc.
+Expanding the analysis to include more songs from top 10, we find that topic 2 and topic 4 still dominate. This reaffirms the hypothesis that songs featuring lyrics about passion, energy, and charm could obtain better success compared to others. However, it is important to acknowledge that a song's success can be influenced by a multitudes of factors, such as its melody, the reputation of the artist singing the song, and so on. Thus, while lyrical content can have an important role, it is certainly not the singular decisive component to the success of a song.
 
 # Summary
 
-In this analysis, we first collected the information about the top 100 songs from 2019 to 2023 from The Billboard Year End Hot 100 charts on Wikipedia. We then used Genius' API to get the lyrics. The data is then cleaned by removing songs that are not in English or with no lyrics found. We then perform the initial layers of text analysis by splitting and tokenizing. In this step, we also cleaned the data again by correcting words that are misspelled due to the pronunciation of pop culture. The data frame is finally filtered by non stop words in order to perform sentiment analysis.
+In this analysis, we first collected the information about the top 100 songs from 2019 to 2023 from The Billboard Year End Hot 100 charts on Wikipedia. Using Genius' API, we were able to acquire the lyrics of the songs. The data set was then cleaned by removing songs that are not in English or with no correct lyrics found. Following this, we performed the initial layers of text analysis which are splitting and tokenizing. In this step, we further refined the data by correcting words that are misspelled due to the pronunciation of pop culture. The data frame is finally filtered by non stop words for sentiment analysis.
 
-From sentiment analysis, we learned that in the recent period of 5 years, song's with more negative words dominate while positive songs went up in 2021 but then subsided. We then looked into the most common negative words and positive words used in the songs and found that most negative words are obscenities. This in turn gave a lot of penalties to the songs so in reality the songs might not be very negative. Furthermore, there might negation in the sentence that contains the negative words, which would make the songs even less negative in meaning. We then moved on to looking at the top song of each year to see what sentiments they convey. There was a healthy mix of negative and positive words in these top songs but what makes them stand out from the rest is that the words are more specific and sentimental. Finally, we looked at whether the top popular artists lean more towards singing negative or positive songs and found that like the trend, they indeed had more negative songs. We also did a bonus section looking at the most positive and most negative songs of each year. We found that the negative songs were almost twice as negative as the positive songs were positive. This was due to the fact that these extremely negative songs repeat a lot of curse words.
+From sentiment analysis, we learned that in the recent period of 5 years, song's with more negative words dominate while positive songs had an uptick in 2021 but then descended. We then looked into the most common negative words and positive words used in the songs and found that most negative words were obscenities. This in turn gave a lot of penalties to the songs so in reality the songs might not be very negative. Furthermore, there might negation in the sentence that contains the negative words, which would make the songs even less negative in meaning. We then moved on to looking at the top song of each year to see what sentiments they convey. There was a healthy mix of negative and positive words in these top songs but what made them stand out from the rest was that the words are more specific, nuanced and sentimental. Finally, we looked at whether the most successful artists leaned more towards singing negative or positive songs and found that similar to the overall trend, they indeed had more negative songs.
 
-In the later section, we tried to understand more about the topic and the context that the songs sing about by performing a term frequency analysis. We learned that the top songs tend to stay around a certain range of words and there is a chance that very lengthy or wordy song might not be very popular. Through looking at the tf-idf values, we were able to identify some possible themes that these popular songs sing about. These theme include women, intoxication, relationship, spiritual belief or religion, and Christmas. We proceeded to look at the top songs to see whether they also sing about these themes or were deterred from them. We found that some coincided while others did not.
+In the subsequent section, we tried to understand more about the topic and the context that the songs sing about by performing a term frequency analysis. We learned that the top songs tend to stay around a certain range of words and there is a chance that very lengthy or wordy song might not be very popular. Through looking at the tf-idf values, we were able to identify some possible themes that these popular songs sing about. These theme include women, intoxication, relationship, spiritual belief or religion, and Christmas. We proceeded to look at the top songs to see whether they also sing about these themes or diverged from them. We found that some coincided while others did not.
 
 We then explored the context and meaning of the songs further by looking at pairs and groups of words. We began with pairs of words, or bigrams, and confirmed some common themes that we found before. We also saw some new common themes emerging for example desires. The bigrams also allowed us to see clearer in which context the themes were. For instance, women is indeed a common themes but there are different context in which they were sung about. Some were positive and some were negative. We also found that relationship or love was sung about in a more sorrowful and somber setting. Trigrams, however, did not offer much information other than some popular terms that were used and a confirming some topics that were found using individual words and bigrams. Lastly, examining bigrams of the annual top songs helped confirm the hypotheses about the context of the songs we previously made in term frequency analysis.
 
-Ultimately, we came to use a topic modelling technique with LDA algorithm to categorize possible themes of the songs. We found that with our data set, 4 topics were an adequate number. These topics have overlapping words and can be split into 2 big categories. However, there are subtle differences between them. There are 2 topics seemingly relate to passion. One of which is in an uplifting and charming way while the other is more sentimental. The other 2 topics are more on the negative side with a lot of profanity used. One of the 2 seems to talk more about materialistic things like money while the other has a more sensual provocation.
+Ultimately, we employed a topic modelling technique with LDA algorithm to categorize possible themes of the songs. We found that with our data set 4 topics were an appropriate number. These topics have overlapping words and can be split into 2 big categories. However, there are subtle differences between them. There are 2 topics seemingly relate to passion. One of which is in an uplifting and charming way while the other is more sentimental. The other 2 topics are more on the negative side with a lot of profanity used. One of the 2 seems to talk more about materialistic things like money while the other has a more sensual provocation.
 
 # Limitation
 
-There certainly are a lot of limitations in the analyses that we performed. Natural language is messy and pop music is even more so with plentiful slang and sub-cultural words. To have a better, more accurate analysis, we would need to be able to clean the data more attentively. We corrected a large portion of words that missed out the ending letter but there are still many words that are sung with a different pronunciation than one in the dictionary.
+There are certainly a lot of limitations in the analyses that we performed. Natural language is inherently messy and pop music is even more so with abundance of slang and subcultural terminology. To have a better, more accurate analysis, we would need to be able to clean the data more diligently. We corrected a large portion of words that missed out the ending letter but there were still many words that are sung with a different variations of pronunciation.
 
-Furthermore, using lexicons for sentiment analysis created a lot of deviation from the actual intended sentiment of the lyrics. Using lexicons on individual words failed to appropriately assign sentiment value for negative or positive words paired with a negation such as "not", "no", "never", etc. Some value assignments from the lexicons are also controversial.
+Furthermore, using lexicons for sentiment analysis introduced a lot of deviation from the actual intended sentiment of the lyrics. Using lexicons on individual words failed to appropriately assign sentiment value for negative or positive words when paired with a negation term such as "not", "no", "never", etc. Some value assignments from the lexicons were also controversial.
 
-Looking at pairs and groups using n-grams helped us understand the context but still does not demonstrate the entire picture. Some words can be related to each other but they might not be placed adjacently, thus, rendering the n-grams improper. It is possible to look at longer sequence n-grams but then we would trade off a lot of computation power and make the analysis counterproductive.
+While looking at pairs and groups using n-grams helped us understand the context, it still did not demonstrate the entire picture. In natural language, some words can be related to each other but they might not be placed adjacently, thus, rendering the n-grams improper. It is possible to look at longer sequence n-grams but then we would trade off a lot of computation power and make the analysis counterproductive.
 
-To improve the analysis, we would need more sophisticated method such as large language models to be able to put the whole lyrics of the songs into context and interpret their meaning accordingly. We would also need to use a translation model to translate songs in other language and English songs that have some lyrics in other languages in order to avoid losing information.
+To improve the analysis, we would need more sophisticated method such as large language models to be able to put the whole lyrics of the songs into context and interpret their meaning accordingly. We would also need to use a translation model to translate songs in other language and English songs that have some lyrics in other languages in order to avoid loss of information.
 
 # Conclusion
 
-The world in the last 5 years was eventful and the pop music culture certainly did not differ. There were various themes sung about in the top songs with various sentiments. We saw a rising trend in negative songs but we also recognize that it might not be the case for reality as the tools we used were not potent. To gain a better understanding of how the trend of pop music is evolving, it is also necessary to analyze a larger data set with more historical data of the top popular songs. It is also imperical to include information from different sources rather than one singular source.
+The world in the last 5 years was eventful and the pop music culture certainly did not differ. Our analysis revealed an array of various themes that were sung about in the top songs. We saw a rising trend in negative songs but we also recognize that it might not be the case for reality as the tools we used had limitations against the complexity of language. To gain a better understanding of how the trend of pop music is evolving, future researches can benefit from analyzing a larger data set with more historical data of the top popular songs. Additionally, it is crucial to include information from different sources rather than one singular source used in this analysis.
