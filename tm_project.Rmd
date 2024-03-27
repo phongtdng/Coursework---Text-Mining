@@ -952,4 +952,14 @@ Ultimately, we came to use a topic modelling technique with LDA algorithm to cat
 
 # Limitation
 
+There certainly are a lot of limitations in the analyses that we performed. Natural language is messy and pop music is even more so with plentiful slang and sub-cultural words. To have a better, more accurate analysis, we would need to be able to clean the data more attentively. We corrected a large portion of words that missed out the ending letter but there are still many words that are sung with a different pronunciation than one in the dictionary.
+
+Furthermore, using lexicons for sentiment analysis created a lot of deviation from the actual intended sentiment of the lyrics. Using lexicons on individual words failed to appropriately assign sentiment value for negative or positive words paired with a negation such as "not", "no", "never", etc. Some value assignments from the lexicons are also controversial.
+
+Looking at pairs and groups using n-grams helped us understand the context but still does not demonstrate the entire picture. Some words can be related to each other but they might not be placed adjacently, thus, rendering the n-grams improper. It is possible to look at longer sequence n-grams but then we would trade off a lot of computation power and make the analysis counterproductive.
+
+To improve the analysis, we would need more sophisticated method such as large language models to be able to put the whole lyrics of the songs into context and interpret their meaning accordingly.
+
 # Conclusion
+
+The world in the last 5 years was eventful and the pop music culture certainly did not differ. There were various themes sung about in the top songs with various sentiments. We saw a rising trend in negative songs but we also recognize that it might not be the case for reality as the tools we used were not potent. To gain a better understanding of how the trend of pop music is evolving, it is also necessary to analyze a larger data set with more historical data of the top popular songs. It is also imperical to include information from different sources rather than one singular source.
