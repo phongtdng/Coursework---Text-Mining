@@ -863,7 +863,7 @@ In order to use this algorithm, we first need to convert the data frame into DTM
 songs_lda_4 <- LDA(songs_dtm, k = 4, control = list(seed = 507))
 
 songs_topics_4 <- tidy(songs_lda_4, matrix = "beta")
-songs_topics
+songs_topics_4
 ```
 
 Next, we convert the DTM object into an LDA object with `LDA()` function. Since we do not know how many themes or topics there are, we will start setting the number of objects as 4 then adjust as we perform the analysis. Here, we will analyze the word-topic probabilities using the `tidy()` method with matrix parameter set at "beta". In other words, the algorithm will look at the content of the data set and automatically assign probability of a word belonging to a topic. The resulting data frame is a table with the terms and topics they belong to along with the probability. We will visualize this into a graph for better interpretation.
