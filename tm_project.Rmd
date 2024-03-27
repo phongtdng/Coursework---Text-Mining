@@ -350,7 +350,76 @@ ggplot(common_words_by_year_afinn %>% filter(n> 30)) +
   ylab("word")
 ```
 
-## Most positive vs most negative songs
+## Top Songs
+
+```{r}
+top_songs_bing <- songs_en_filtered %>%
+  filter(position == 1) %>% 
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) 
+  
+ggplot(top_songs_bing) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("word") +
+  ylab("frequency")
+```
+
+We have seen the over sentiments of all songs previously, perhaps the top songs might convey different emotions than the rest that make them stand out more. We will look at this by filtering out the data set to have only songs at the first position in the chart.
+
+For the top songs, there are positive words in common to all songs such as "love", "loving", "trust" and "woo". However, we also see some more specific and more positive words such as "happier", "perfect", "perfectly", and "glitter". On the negative side, they also use profanity such as "shit" and "hell". "shimmer" seems to be considered negative in bing lexicon but the word's definition does not exactly coincide so we will not consider it. It is interesting, however, that the negative words are also more specific and deeper such as "drowning" and "cold".
+
+```{r}
+top_songs_afinn <- songs_en_filtered %>%
+  filter(position == 1) %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  count(word, value, sort = TRUE) %>% 
+  mutate(sentiment = case_when(
+    value < 0 ~ "negative",
+    value > 0 ~ "positive",
+    TRUE ~ "neutral"
+  ))
+
+ggplot(top_songs_afinn) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("word") +
+  ylab("frequency")
+```
+
+Using afinn lexicon, we further see that the negative words used in the top songs carry more criticism with words like "faking" or "fake". We also see very emotional theme with "empty", "lost", "broken", and "cheated".
+
+For now, it is still unclear what topics that the songs sing about. We have only seen that these songs seem more emotional and use less profanity to express the bad feelings while using more specific words to describe good feelings. We will later on examine the context of songs better with term frequency and n-gram analysis.
+
+## Top Artists
+
+We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
+
+```{r}
+#make a data frame of top 10 artists (with most songs in the charts) of the period
+artists_sa <- bind_rows(
+  sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
+  sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
+) %>%
+  group_by(method, artists) %>% 
+  mutate(total_songs = sum(n)) %>% 
+  group_by(method) %>% 
+  slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
+
+#visualise  
+artists_sa %>% ggplot() +
+  geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
+  coord_flip() +
+  facet_wrap(~method, scales = "free_y") +
+  xlab("Top artists") +
+  ylab("number of songs")
+```
+
+Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
+
+## Bonus: Most positive vs most negative songs
 
 ```{r}
 #most positive songs from each year
@@ -411,32 +480,6 @@ songs_en_filtered %>%
 ```
 
 The negative songs, on the other hands, portray a very vague story with their most frequent words. Most of these words are swear words and carry little meaning by themselves. "Blueberry Faygo" is the only song of the 5 that has high diversity of top words and sequentially gives us more information about the song's topics. With words like "shooting", "poured", "millions", and named entities "draco" and "blueberry faygo", it is probably that the songs sings about living this certain kind of lifestyle with "draco" as an important figure, perhaps one of the singers or producers of the song, and "blueberry faygo" as a metaphor for certain thing about this lifestyle. Like stated previously, it is conceivably better to analyse these songs by pair or word groups to understand more what the topic or message of these songs is.
-
-## Top Artists
-
-We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
-
-```{r}
-#make a data frame of top 10 artists (with most songs in the charts) of the period
-artists_sa <- bind_rows(
-  sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
-  sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
-) %>%
-  group_by(method, artists) %>% 
-  mutate(total_songs = sum(n)) %>% 
-  group_by(method) %>% 
-  slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
-
-#visualise  
-artists_sa %>% ggplot() +
-  geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
-  coord_flip() +
-  facet_wrap(~method, scales = "free_y") +
-  xlab("Top artists") +
-  ylab("number of songs")
-```
-
-Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
 
 # Term Frequency Analysis
 
