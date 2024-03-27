@@ -1,5 +1,5 @@
 ---
-title: "Popular Songs' Lyrics Analysis"
+title: "What is happening with pop music culture?"
 author: "Phong Duong"
 date: "2024-02-14"
 output: html_document
@@ -937,3 +937,9 @@ tidy(songs_lda_4, matrix = "gamma") %>%
 ```
 
 Including more songs from top 10, we see that topic 2 and topic 4 still dominate. This re-affirms the hypothesis that songs that has lyrics about passion, energy, and charm could be more successful than others. Of course, however, there are still many other elements that determine whether a song is successful, such as the melody, the artist, etc.
+
+# Summary
+
+# Limitation
+
+# Conclusion
