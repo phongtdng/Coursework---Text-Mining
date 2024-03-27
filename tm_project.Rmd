@@ -23,8 +23,10 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
 # install.packages("cld3") #for detecting language
 # install.packages("tidytext")
-# install.packages("hunspell") #detecting misspelling
-# install.packages("ggpubr") #combining ggplots into 1
+# install.packages("hunspell") #detect misspelling
+# install.packages("ggpubr") #combine ggplots into 1
+# install.packages("igraph") #prepare network graph
+# install.packages("ggraph") #make network graph
 ```
 
 ```{r}
@@ -35,6 +37,8 @@ library(geniusr)
 library(tidytext)
 library(hunspell)
 library(ggpubr)
+library(igraph)
+library(ggraph)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -522,7 +526,7 @@ After weeding out the vocal sounds, we can see that there are some common themes
 
 ```{r}
 #add more words and sounds that do not have semantic meaning
-vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm")
+vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm", "bop", "yeah")
 
 #some songs are in the top charts for several years and tf-idf do not work with group() so we will create a function to do this per year
 map_tf_idf <- function(y) {
@@ -569,6 +573,8 @@ songs_tf_idf %>%
 
 # N-grams
 
+We have explored the sentimental and possible themes of the top songs from 2019 to 2023 but the story they tell is still a bit hazy. Pop songs are full of metaphors and employ words in artful ways that cannot be simply deciphered by looking at individual words. In this section, we will look at words of the lyrics in pairs and groups and try to connect them in order to get a fuller picture of the songs. We will first look at pairs of words and the look at groups of 3 words to try to understand better what the songs are singing about.
+
 ## Bigram
 
 ### Preparing data
@@ -588,26 +594,31 @@ song_bigram %>%
   count(bigram, sort = TRUE)
 ```
 
+First to convert words into pairs, we will stitch back the cleaned data frame with individuals words into a data frame with each row representing each column. This is because during the cleaning process, we corrected the spelling of many words and then tokenized the data set. If we were to use the original, uncleaned data set we would have to go through the cleaning process again. Therefore, here the cleaned data frame is stitched back and unraveled into pairs of words, or bigrams.
+
+Looking at the counts, we can see that there are many bigrams that are made up of stop words and vocal sounds that do not contribute much meaning to the songs. Therefore, we will filter them out.
+
 ```{r}
 bigram_seperated <- song_bigram %>% 
   separate(bigram, c("word1", "word2"), sep = " ")
-bigram_seperated
-```
 
-```{r}
 bigram_filtered <- bigram_seperated %>% 
+  #filter stop words
   filter(!word1 %in% stop_words$word) %>%
   filter(!word2 %in% stop_words$word) %>% 
+  #filter vocal sounds
   filter(!word1 %in% vocal_sounds_extended) %>% 
   filter(!word2 %in% vocal_sounds_extended)
 
-bigram_filtered 
-```
-
-```{r}
 bigram_united <- bigram_filtered %>% 
   unite(bigram, word1, word2, sep = " ")
 
+bigram_united
+```
+
+Above, we first separate the bigrams into 2 columns of individual words. We then filtered for each columns of rows that contained the stop words and vocal sounds from the list we created before. We then united the words together to have a final data frame similar to the original but with less meaning less bigrams. Now we can explore better the context of the songs.
+
+```{r}
 bigram_united %>% 
   group_by(year) %>% 
   count(bigram, sort = T) %>% 
@@ -619,6 +630,8 @@ bigram_united %>%
   xlab("frequency") +
   ylab("word")
 ```
+
+It seems that for all the years, slang and profanity are frequently present. We can also see why when we performed sentiment analysis, there was a lot of negativity in the songs but in the actual reality and culture that might not be the case. For example, the word "bitch" carries a negative connotation but when paired with "bad", it might not necessarily mean "bad" but rather have a more positive connotation culturally speaking. Overall, there are still many common pairs that do not paint the full meaning of the songs so we will use tf-idf in order to take them out and shift the focus to more relevant words.
 
 ### TF-IDF
 
@@ -636,21 +649,116 @@ bigram_tf_idf %>%
   facet_wrap(~year, scale = "free_y")
 ```
 
+Looking at bigram frequency, we can see some themes similar to the term frequency analysis starting to emerge. Bigrams like "girlfriend girlfriend", " girl summer", "roxanne roxanne", "woman woman", and "broadway girls" indicate that female is a relevant topic for the recent years. Spiritual or religious matter is also important as word pairs like "god's country", " talking god", and " god makes" show up in the charts. It is interesting that in 2021, there are 2 bigrams related to god. Like previously mentioned, the world had just witnessed the havoc of the pandemic, thus, it could be a reason why people are listening to songs related to their faith. We can also see that in 2019, before the pandemic, songs stand out with words talking more about enjoying life and having fun from bigrams such as "whiskey glasses", "girl summer", and "taste tequila". In 2020, there are not many of similar words but rather a new emergence of more sentimental words such as "memories bring" and "feeling feeling". In 2021 and 2022, however, they come back with words like "shaking ass", "knees shaking", and "sigue bailando" (keep dancing).
+
+In order to understand better the relationship and connections of these words, we will map them out into a network and identify clusters that characterize the recent years in music lyrics.
+
 ### Graph
 
 ```{r}
-library("igraph")
-library("ggraph")
+set.seed(507)
 
-bigram_count <- bigram_filtered %>% 
-  count(word1, word2 , sort = T)
+bigram_count <- bigram_filtered %>%
+  count(word1, word2 , sort = TRUE)
 
+#prepare graph  
 bigram_for_graph <- bigram_count %>%
-  filter(n > 10) %>%
-  graph_from_data_frame()
+    filter(n > 8) %>%
+    graph_from_data_frame()
 
+#visualise graph
 ggraph(bigram_for_graph, layout = "fr") +
-  geom_edge_link() +
-  geom_node_point() +
-  geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
+    geom_edge_link(aes(edge_alpha = n, edge_width = "1px"), show.legend = FALSE) +
+    geom_node_point() +
+    geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
+```
+
+From mapping out the connections and relationships of words, we can see a few clusters that could well represent the trending topics in the recent year.
+
+First, there is a cluster around the word "wanna". So, it is common to sing about desires. The word "wanna" also has the strongest connection with the word "feel", which shows that desire for sentiment is possibly most frequent. There is also a cluster around the word "about", the connections are with "thinking", "talking", and "worried". Although they are words that frequently pair with the preposition "about", it is interesting to point out that "thinking" has the highest connection with "about". This closely relates to the theme of desire that we saw before.
+
+There is a dense cluster around the words "bad" and "bitch". Their neighbors are "bitches", "guy", "habits", "lil", and "ass". We discussed before that there is a trending attitude in the pop culture of being a "bad bitch", this cluster seems to confirm this phenomenon with other similar pairs of "bad" and "bitches", "real" and "ass" and "bitch".
+
+We also see a smaller cluster around "love". It is, however, surrounded by more negative words namely "ruin", "savage", and "lies". There is also another small cluster related to this topic formed by the words "heart", "broken", and "cold". We already learned that romance or love is a common topic. Here, we get a more specific picture of how love is sung about, which is more on the sorrow side. It seems that in the recent years, sad love songs are more dominant than happy ones.
+
+The cluster around "girl" also has some interesting connection. "Hot girl summer" was a trending term on social media and it is also present here. The song(s) containing these words perhaps helped popularized it. "baby" is also a prominent word pair for "girl", which is normal as it is a quite common way that some men address at girls. "freaky", however, also seems a strong connection with "girl". Although this might not be direct sexualization but it could be so implicitly. This is a topic that has a long run in history and it seems to persist in the modern day.
+
+Finally, Christmas seems to be many's favorite as we can see some clusters of the relevant words such as "holly", "jolly", "christmas", and "tree", and "jingle", "bell", and "rock". We have picked up this idea before with tf-idf analysis and saw that this seems to have surged in popularity after 2022.
+
+## Trigram
+
+```{r}
+song_trigram <- songs_cleaned %>%
+  select(-lang) %>% 
+  #nest back clean dataframe to avoid correcting the spelling again
+  nest(lyrics = word) %>% 
+  #nest gives a list of list so we have to unlist them
+  mutate(lyrics = map(lyrics, unlist),
+         lyrics = unlist(lapply(lyrics, paste, collapse = " "))) %>% 
+  #unnesting to bigrams 
+  unnest_tokens(trigram, lyrics, token = "ngrams", n = 3)
+
+song_trigram %>% 
+  count(trigram, sort = TRUE)
+```
+
+```{r}
+trigram_seperated <- song_trigram %>% 
+  separate(trigram, c("word1", "word2", "word3"), sep = " ")
+
+trigram_filtered <- trigram_seperated %>% 
+  #filter stop words
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>% 
+  filter(!word3 %in% stop_words$word) %>% 
+  #filter vocal sounds
+  filter(!word1 %in% vocal_sounds_extended) %>% 
+  filter(!word2 %in% vocal_sounds_extended) %>% 
+  filter(!word3 %in% vocal_sounds_extended)
+
+trigram_united <- trigram_filtered %>% 
+  unite(trigram, word1, word2, word3, sep = " ")
+
+trigram_united %>% 
+  group_by(year) %>% 
+  count(trigram, sort = T) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(trigram, n))) +
+  geom_col() +
+  facet_wrap(~year, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+```{r}
+trigram_tf_idf <- trigram_united %>%
+  count(year, trigram) %>%
+  bind_tf_idf(trigram, year, n) %>%
+  arrange(desc(tf_idf))
+
+trigram_tf_idf %>% 
+  group_by(year) %>% 
+  slice_max(tf_idf, n = 10) %>% 
+  ggplot() +
+  geom_col(aes(tf_idf, reorder(trigram, tf_idf))) +
+  facet_wrap(~year, scale = "free_y")
+```
+
+## Top songs
+
+```{r}
+bigram_count_top <- bigram_filtered %>%
+  filter(position == 1) %>% 
+  count(word1, word2 , sort = TRUE)
+
+#prepare graph  
+bigram_for_graph_top <- bigram_count_top %>%
+    graph_from_data_frame()
+
+#visualise graph
+ggraph(bigram_for_graph_top, layout = "fr") +
+    geom_edge_link(aes(edge_alpha = n, edge_width = "1px"), show.legend = FALSE) +
+    geom_node_point() +
+    geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
 ```
