@@ -812,17 +812,16 @@ Using tf-idf, we obtain similar results with just the term frequency. These word
 ## Top songs
 
 ```{r}
-bigram_count_top <- bigram_filtered %>%
+bigram_united %>% 
   filter(position == 1) %>% 
-  count(word1, word2 , sort = TRUE)
-
-#prepare graph  
-bigram_for_graph_top <- bigram_count_top %>%
-    graph_from_data_frame()
-
-#visualise graph
-ggraph(bigram_for_graph_top, layout = "fr") +
-    geom_edge_link(aes(edge_alpha = n, edge_width = "1px"), show.legend = FALSE) +
-    geom_node_point() +
-    geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
+  count(year, bigram) %>%
+  bind_tf_idf(bigram, year, n) %>%
+  arrange(desc(tf_idf)) %>% 
+  ggplot() +
+  geom_col(aes(tf_idf, reorder(bigram, tf_idf))) +
+  facet_wrap(~year, scale = "free_y")
 ```
+
+Looking at individual words have already given us a big context of the top most popular songs of 2019 to 2023. We can drill deeper into in what context are the words used so we can check whether the interpretation we made previously was adequate.
+
+It seems that the context of the word use was interpreted correctly. The song in 2019 main line seems to be riding horse on an old town road. The other pairs do not exactly give us more information about the idea of the songs but do show us there is a theme around old town and cowboy in the song. The bigrams of the top song in 2020 confirms that there is a sensual notation with pairs such as "touch baby", "overdrive baby", and "sin city's". 2021's song of the year is affirmatively energetic and uplifting. There are a lot of sparks with pairs like "life glitter" , "sky glitter", and "eyes shining". Meanwhile, 2022's song conveys a suffocating feeling with "heat waves", "late nights", "gonna lose", and "fake water". Lastly, the top song of 2023 has some connected bigrams such as "baby something's" and "something's telling", and "talking bout" and "bout life". The other pairs seem to confirm that the song meant to sing to a lover about life in a night setting which was induced by alcohol.
