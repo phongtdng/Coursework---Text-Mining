@@ -964,7 +964,7 @@ Furthermore, using lexicons for sentiment analysis created a lot of deviation fr
 
 Looking at pairs and groups using n-grams helped us understand the context but still does not demonstrate the entire picture. Some words can be related to each other but they might not be placed adjacently, thus, rendering the n-grams improper. It is possible to look at longer sequence n-grams but then we would trade off a lot of computation power and make the analysis counterproductive.
 
-To improve the analysis, we would need more sophisticated method such as large language models to be able to put the whole lyrics of the songs into context and interpret their meaning accordingly.
+To improve the analysis, we would need more sophisticated method such as large language models to be able to put the whole lyrics of the songs into context and interpret their meaning accordingly. We would also need to use a translation model to translate songs in other language and English songs that have some lyrics in other languages in order to avoid losing information.
 
 # Conclusion
 
