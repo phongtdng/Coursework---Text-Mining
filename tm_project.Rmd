@@ -11,23 +11,23 @@ The last 5 years have been eventful around the world. From Brexit in 2019, to th
 
 Pop culture has always been an important device that mirrors societal attitude and expression. One powerful tool that portrays well the influence of pop culture on the public is music. Music reflects well emotions and belief of people. By examining the general's choice of pop songs, we can obtain valuable insights on cultural trends and collective sentiments of the society.
 
-In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of the community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large part of the music community (stats?).
+In this analysis, we will analyse lyrics from the top popular songs from 2019 to 2023 to hopefully get a glimpse of the emotional experiences and the important topics that are the focal point of the community of music listeners. The songs are curated from Billboard annual top 100 singles and therefore might not be inclusive to all listeners but nevertheless is representative to a large part of the music community.
 
 # Library
 
 ```{r}
-# #installing packages if needed
-# install.packages("tidyverse")
-# install.packages("rvest") #for scraping data from static web pages
-# install.packages("xml2") #for reading html files of the web pages
-# remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
-# install.packages("cld3") #for detecting language
-# install.packages("tidytext")
-# install.packages("hunspell") #detect misspelling
-# install.packages("ggpubr") #combine ggplots into 1
-# install.packages("igraph") #prepare network graph
-# install.packages("ggraph") #make network graph
-# install.packages("topicmodels") #topic modelling
+#installing packages if needed
+if (!require(tidyverse)) install.packages("tidyverse")
+if (!require(rvest)) install.packages("rvest") #for scraping data from static web pages
+if (!require(xml2)) install.packages("xml2") #for reading html files of the web pages
+if (!require(geniusr)) remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
+if (!require(cld3)) install.packages("cld3") #for detecting language
+if (!require(tidytext)) install.packages("tidytext")
+if (!require(hunspell)) install.packages("hunspell") #detect misspelling
+if (!require(ggpubr)) install.packages("ggpubr") #combine ggplots into 1
+if (!require(igraph)) install.packages("igraph") #prepare network graph
+if (!require(ggraph)) install.packages("ggraph") #make network graph
+if (!require(topicmodels)) install.packages("topicmodels") #topic modelling
 ```
 
 ```{r}
