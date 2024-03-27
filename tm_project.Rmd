@@ -902,6 +902,38 @@ songs_top_terms_6 %>%
 
 It seems that even when extending to 6 topics, we still do not get a clearer picture. It stays the same that some song sings about passion in various ways and some songs sing contains a lot of sexualization and material oriented. This is not surprising for pop culture as these theme are heavily embedded within the history of modern pop culture.
 
-We, therefore, conclude with the setting of 4 important topics of the most popular songs in the recent years: charm, passion, sensual desire, and materialism.
+We, therefore, conclude with the setting of 4 important topics of the most popular songs in the recent years: materialism (topic 1), charm (topic 2), sensual desire (topic 3), and passion (topic 4) .
 
-## 
+## Top songs' topics
+
+Using this model of 4 topics, we can check to which topic the top song of each year pertain. From this we can see whether choosing to sing about a certain topic might make a difference between getting into top 100 and getting the first position of the chart.
+
+```{r}
+tidy(songs_lda_4, matrix = "gamma") %>% 
+  inner_join(filter(songs_en, position == 1), by = join_by("document" == "song_name"), keep = TRUE) %>% 
+  select(-song_name, -lyrics) %>% 
+  group_by(document) %>% 
+  slice_max(gamma) %>% 
+  arrange(desc(year))
+```
+
+Setting parameter "matrix" at "gamma", we obtain a table of songs with the probabilities they pertain to a topic. We are only interested in the top song so we will filter out other songs by making an inner join with the initial data frame that contains song name, position, and other information. Within this data frame, we filter it to contain only songs with position equal to 1 so the inner join will produce a table of number 1 songs with probabilities of belonging to each topic. We then filter the highest probability to a topic of each song to find out the most probably topic that the song sings about.
+
+From this, we see that the top songs pertain to a more upbeat, charming, or sentimental passion theme. We also saw from before that these songs contain less profanity, are either sentimental, metaphorical, or energetic. Perhaps, these are the ingredients for making top songs in the modern pop culture. We can further extend this analysis to include songs from top 10 for each year to examine this idea.
+
+```{r}
+tidy(songs_lda_4, matrix = "gamma") %>% 
+  inner_join(filter(songs_en, position <= 10), by = join_by("document" == "song_name"), keep = TRUE) %>% 
+  select(-song_name, -lyrics) %>% 
+  group_by(document) %>% 
+  slice_max(gamma) %>% 
+  arrange(desc(year)) %>% 
+  ungroup() %>% 
+  count(topic)  %>% 
+  ggplot() +
+  geom_col(aes(n, reorder(as.factor(topic), n))) +
+  xlab("count") +
+  ylab("topic")
+```
+
+Including more songs from top 10, we see that topic 2 and topic 4 still dominate. This re-affirms the hypothesis that songs that has lyrics about passion, energy, and charm could be more successful than others. Of course, however, there are still many other elements that determine whether a song is successful, such as the melody, the artist, etc.
