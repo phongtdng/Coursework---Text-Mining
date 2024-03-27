@@ -559,7 +559,7 @@ ggplot(top_term) +
 It seems that some significant words are vocal sounds (e.g., "ooh", "la", "bam", etc.). Although they contribute to the songs vocally, they do not carry much semantic meaning and therefore we will filter them out to get a better picture of the songs' messages.
 
 ```{r}
-vocal_sounds <- c("ah", "ody", "boaw", "ooh", "oh", "bam", "da", "na", "woah", "yaka", "la", "doo", "ding", "dong", "buh")
+vocal_sounds <- c("ah", "ody", "boaw", "ooh", "oh", "bam", "da", "na", "woah", "yaka", "la", "doo", "ding", "dong", "buh", "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm", "bop", "yeah")
 
 top_term <- song_words %>%
   filter(!word %in% vocal_sounds) %>% 
@@ -576,14 +576,11 @@ ggplot(top_term) +
 After weeding out the vocal sounds, we can see that there are some common themes that characterize the top songs for each year. "i" and "you" appear in all years, suggesting that the top songs tend to have a first person perspective. This could make the song more personal and better connect with the listeners. The context of the songs, however, are still quite hazy and not distinctive enough to draw conclusions on the relevant topics of the years. We will now compute the inverse document frequency to combat this issue.
 
 ```{r}
-#add more words and sounds that do not have semantic meaning
-vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm", "bop", "yeah")
-
 #some songs are in the top charts for several years and tf-idf do not work with group() so we will create a function to do this per year
 map_tf_idf <- function(y) {
   df <- song_words %>% 
     filter(year == y) %>% 
-    filter(!word %in% vocal_sounds_extended) %>%
+    filter(!word %in% vocal_sounds) %>%
     bind_tf_idf(word, song_name, n)
 }
 
@@ -670,8 +667,8 @@ bigram_filtered <- bigram_seperated %>%
   filter(!word1 %in% stop_words$word) %>%
   filter(!word2 %in% stop_words$word) %>% 
   #filter vocal sounds
-  filter(!word1 %in% vocal_sounds_extended) %>% 
-  filter(!word2 %in% vocal_sounds_extended)
+  filter(!word1 %in% vocal_sounds) %>% 
+  filter(!word2 %in% vocal_sounds)
 
 bigram_united <- bigram_filtered %>% 
   unite(bigram, word1, word2, sep = " ")
@@ -777,9 +774,9 @@ trigram_filtered <- trigram_seperated %>%
   filter(!word2 %in% stop_words$word) %>% 
   filter(!word3 %in% stop_words$word) %>% 
   #filter vocal sounds
-  filter(!word1 %in% vocal_sounds_extended) %>% 
-  filter(!word2 %in% vocal_sounds_extended) %>% 
-  filter(!word3 %in% vocal_sounds_extended) %>% 
+  filter(!word1 %in% vocal_sounds) %>% 
+  filter(!word2 %in% vocal_sounds) %>% 
+  filter(!word3 %in% vocal_sounds) %>% 
   filter(word1!=word2 & word2!=word3 & word1!=word3)
 
 trigram_united <- trigram_filtered %>% 
@@ -843,7 +840,7 @@ Previously, through sentiment analysis, term frequency analysis, and n-gram anal
 ```{r}
 songs_dtm <- songs_en_filtered %>% 
   select(-lang) %>% 
-  filter(!word %in% vocal_sounds_extended) %>% 
+  filter(!word %in% vocal_sounds) %>% 
   #nest back clean dataframe to avoid correcting the spelling again
   nest(lyrics = word) %>% 
   #nest gives a list of list so we have to unlist them
