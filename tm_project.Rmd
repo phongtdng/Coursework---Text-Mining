@@ -27,6 +27,7 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # install.packages("ggpubr") #combine ggplots into 1
 # install.packages("igraph") #prepare network graph
 # install.packages("ggraph") #make network graph
+# install.packages("topicmodels") #topic modelling
 ```
 
 ```{r}
@@ -39,6 +40,7 @@ library(hunspell)
 library(ggpubr)
 library(igraph)
 library(ggraph)
+library(topicmodels)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -825,3 +827,113 @@ bigram_united %>%
 Looking at individual words have already given us a big context of the top most popular songs of 2019 to 2023. We can drill deeper into in what context are the words used so we can check whether the interpretation we made previously was adequate.
 
 It seems that the context of the word use was interpreted correctly. The song in 2019 main line seems to be riding horse on an old town road. The other pairs do not exactly give us more information about the idea of the songs but do show us there is a theme around old town and cowboy in the song. The bigrams of the top song in 2020 confirms that there is a sensual notation with pairs such as "touch baby", "overdrive baby", and "sin city's". 2021's song of the year is affirmatively energetic and uplifting. There are a lot of sparks with pairs like "life glitter" , "sky glitter", and "eyes shining". Meanwhile, 2022's song conveys a suffocating feeling with "heat waves", "late nights", "gonna lose", and "fake water". Lastly, the top song of 2023 has some connected bigrams such as "baby something's" and "something's telling", and "talking bout" and "bout life". The other pairs seem to confirm that the song meant to sing to a lover about life in a night setting which was induced by alcohol.
+
+# Topic Modelling
+
+## Topic detection
+
+Previously, through sentiment analysis, term frequency analysis, and n-gram analysis, we have detected some common themes that top pop songs from 2019 to 2023 sing about. These are, but not limited to, love, faith, women, Christmas, dancing, desires and so on. In this section, we will utilize an unsupervised machine learning technique to automatically identify the major topics sung about in the songs. This technique is done using the LDA (Latent Dirichlet Allocation) algorithm.
+
+```{r}
+songs_dtm <- songs_en_filtered %>% 
+  select(-lang) %>% 
+  filter(!word %in% vocal_sounds_extended) %>% 
+  #nest back clean dataframe to avoid correcting the spelling again
+  nest(lyrics = word) %>% 
+  #nest gives a list of list so we have to unlist them
+  mutate(lyrics = map(lyrics, unlist),
+         lyrics = unlist(lapply(lyrics, paste, collapse = " "))) %>% 
+  distinct(song_name, .keep_all = TRUE) %>% 
+  unnest_tokens(word, lyrics) %>% 
+  count(word, song_name, sort = TRUE) %>% 
+  cast_dtm(song_name, word, n)
+
+songs_dtm
+```
+
+In order to use this algorithm, we first need to convert the data frame into DTM (document term matrix) format. We will use the data frame that has stop words filtered out and we will eliminate the vocal sounds in sequence as these words are present in most songs and scantly contribute to the meaning of the lyrics. Furthermore, since we are analyzing the lyrics of all songs for all 5 years, we will keep only unique songs as some songs stay in the top charts for multiple years and consequently would make a lot of words redundant. After this, we count the words by song name and then convert the data frame into the DTM format using `cast_dtm()`. We can see that the object has high sparsity, which is a good sign as it means the vocabulary used in the data frame is rich and it validates the fact that there is variety within the songs.
+
+```{r}
+songs_lda_4 <- LDA(songs_dtm, k = 4, control = list(seed = 507))
+
+songs_topics_4 <- tidy(songs_lda_4, matrix = "beta")
+songs_topics
+```
+
+Next, we convert the DTM object into an LDA object with `LDA()` function. Since we do not know how many themes or topics there are, we will start setting the number of objects as 4 then adjust as we perform the analysis. Here, we will analyze the word-topic probabilities using the `tidy()` method with matrix parameter set at "beta". In other words, the algorithm will look at the content of the data set and automatically assign probability of a word belonging to a topic. The resulting data frame is a table with the terms and topics they belong to along with the probability. We will visualize this into a graph for better interpretation.
+
+```{r}
+songs_top_terms_4 <- songs_topics_4 %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+songs_top_terms_4 %>% 
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+Setting at 4 topics, we see that it is not exactly clear what each topic is. The words are quite generic and there are a lot of overlaps. This is normal as these songs are pop songs and they tend to gravitate towards the same vocabulary. However, we can still see some patterns in the graph. For example, topic 1 seems to be heavily negative and perhaps materialistic with the word "money". Topic 3 also has many similar words but seems to be more on the sexual front with words like "baby", "girl", "ass", "love". Topic 2 seems to center around passion in an uplifting way with words while topic 4 seems to be about passion but in a more sentimental and charming with words like "feeling" and "beautiful".
+
+Since the topics are still not clear. We will extend the setting into 6 topics to see whether we can detect more specific topics.
+
+```{r}
+songs_lda_6 <- LDA(songs_dtm, k = 6, control = list(seed = 507))
+
+songs_topics_6 <- tidy(songs_lda_6, matrix = "beta")
+
+songs_top_terms_6 <- songs_topics_6 %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+songs_top_terms_6 %>% 
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+It seems that even when extending to 6 topics, we still do not get a clearer picture. It stays the same that some song sings about passion in various ways and some songs sing contains a lot of sexualization and material oriented. This is not surprising for pop culture as these theme are heavily embedded within the history of modern pop culture.
+
+We, therefore, conclude with the setting of 4 important topics of the most popular songs in the recent years: materialism (topic 1), charm (topic 2), sensual desire (topic 3), and passion (topic 4) .
+
+## Top songs' topics
+
+Using this model of 4 topics, we can check to which topic the top song of each year pertain. From this we can see whether choosing to sing about a certain topic might make a difference between getting into top 100 and getting the first position of the chart.
+
+```{r}
+tidy(songs_lda_4, matrix = "gamma") %>% 
+  inner_join(filter(songs_en, position == 1), by = join_by("document" == "song_name"), keep = TRUE) %>% 
+  select(-song_name, -lyrics) %>% 
+  group_by(document) %>% 
+  slice_max(gamma) %>% 
+  arrange(desc(year))
+```
+
+Setting parameter "matrix" at "gamma", we obtain a table of songs with the probabilities they pertain to a topic. We are only interested in the top song so we will filter out other songs by making an inner join with the initial data frame that contains song name, position, and other information. Within this data frame, we filter it to contain only songs with position equal to 1 so the inner join will produce a table of number 1 songs with probabilities of belonging to each topic. We then filter the highest probability to a topic of each song to find out the most probably topic that the song sings about.
+
+From this, we see that the top songs pertain to a more upbeat, charming, or sentimental passion theme. We also saw from before that these songs contain less profanity, are either sentimental, metaphorical, or energetic. Perhaps, these are the ingredients for making top songs in the modern pop culture. We can further extend this analysis to include songs from top 10 for each year to examine this idea.
+
+```{r}
+tidy(songs_lda_4, matrix = "gamma") %>% 
+  inner_join(filter(songs_en, position <= 10), by = join_by("document" == "song_name"), keep = TRUE) %>% 
+  select(-song_name, -lyrics) %>% 
+  group_by(document) %>% 
+  slice_max(gamma) %>% 
+  arrange(desc(year)) %>% 
+  ungroup() %>% 
+  count(topic)  %>% 
+  ggplot() +
+  geom_col(aes(n, reorder(as.factor(topic), n))) +
+  xlab("count") +
+  ylab("topic")
+```
+
+Including more songs from top 10, we see that topic 2 and topic 4 still dominate. This re-affirms the hypothesis that songs that has lyrics about passion, energy, and charm could be more successful than others. Of course, however, there are still many other elements that determine whether a song is successful, such as the melody, the artist, etc.
