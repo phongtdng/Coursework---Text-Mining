@@ -614,6 +614,18 @@ songs_tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
+From the sentiment analysis, we learned that the top songs stand out by employing more specific and emotional words. We can learn more about their objects of attention by looking at the top tf-idf values of each song.
+
+The top song in 2019 seems to sing about riding horses on an old town road. This is probably metaphorical for something else, which we can explore later by looking at pairs and groups of words. The song also contains words like "nothing" and "nobody" so there is a possibility that the song means to sing about the state of being alone or different from the rest. Connecting with the previous context on an old town road, perhaps, the singer implies about how they are different now than the people of the place they are from.
+
+Next, in 2020, it seems to be more of a sad song through words like "blinded", "empty", and "drowning". Probable context for "blinded" is "blinded" by the "city's" "lights". Words such as "empty", "drowning", "sleep", "trust" and "touch" could imply a romantic or sensual affair that turned stale.
+
+The top song in 2021 seems, however, to be a more energetic, fun, and positive song with words such as "levitating", "dance", and "blast". Overall, the song seems to simply convey a message about enjoying the "night" "tonight" with "moonlight" and the song connects directly with the listeners by the use of "you're" and invites them on the journey with words like "ride", "fly" and "away".
+
+2022's top song seems to have a summer vibe with top words being "heat", "waves", "june". It is not, however, about enjoying the summer because the words are quite intense and bear some discomforting feelings. The song also sings about "middle" and "nights" where the singer might "sometimes" "think" "about" something and have a "vision".
+
+Finally, 2023 was topped by a seemingly sad song about romance. There is a clear narrative of at least 2 people involved as the song uses a lot of "we" and "our". There is also verbal exchange with words like "telling" and "said". Nostalgia is also a topic of the song with "remember" and this seems to be invoked through "liquor".
+
 # N-grams
 
 We have explored the sentimental and possible themes of the top songs from 2019 to 2023 but the story they tell is still a bit hazy. Pop songs are full of metaphors and employ words in artful ways that cannot be simply deciphered by looking at individual words. In this section, we will look at words of the lyrics in pairs and groups and try to connect them in order to get a fuller picture of the songs. We will first look at pairs of words and the look at groups of 3 words to try to understand better what the songs are singing about.
