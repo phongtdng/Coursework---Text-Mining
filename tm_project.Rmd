@@ -61,7 +61,7 @@ read_html(billboard100_2023) %>%
   xml_text() %>% 
   str_replace_all("\n", "") %>% 
   str_replace_all("\"", "%") %>% 
-  as_data_frame() %>% 
+  dplyr::as_data_frame() %>% 
   separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
 ```
 
@@ -83,8 +83,8 @@ get_top_songs <- function(year){
   xml_text() %>% 
   str_replace_all("\n", "") %>% 
   str_replace_all("\"", "%") %>% 
-  as_data_frame() %>% 
-  separate_wider_delim("value","%", names = c("position", "song_name", "artists"))
+  dplyr::as_data_frame() %>% 
+  separate_wider_delim("value","%", names = c("position", "song_name", "artists"), too_many = "merge")
   
   df <- df %>% mutate("year" = year) #add a year column
   
