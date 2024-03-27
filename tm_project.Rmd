@@ -23,8 +23,10 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 # remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
 # install.packages("cld3") #for detecting language
 # install.packages("tidytext")
-# install.packages("hunspell") #detecting misspelling
-# install.packages("ggpubr") #combining ggplots into 1
+# install.packages("hunspell") #detect misspelling
+# install.packages("ggpubr") #combine ggplots into 1
+# install.packages("igraph") #prepare network graph
+# install.packages("ggraph") #make network graph
 ```
 
 ```{r}
@@ -35,6 +37,8 @@ library(geniusr)
 library(tidytext)
 library(hunspell)
 library(ggpubr)
+library(igraph)
+library(ggraph)
 ```
 
 Note: the package `geniusr` is an R package for using Genius API. The package is originally created by ewenme but there is an issue for function `get_lyrics`, which has been fixed by giovanni-cutri so we will use their version of `geniusr` package.
@@ -346,7 +350,76 @@ ggplot(common_words_by_year_afinn %>% filter(n> 30)) +
   ylab("word")
 ```
 
-## Most positive vs most negative songs
+## Top Songs
+
+```{r}
+top_songs_bing <- songs_en_filtered %>%
+  filter(position == 1) %>% 
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) 
+  
+ggplot(top_songs_bing) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("word") +
+  ylab("frequency")
+```
+
+We have seen the over sentiments of all songs previously, perhaps the top songs might convey different emotions than the rest that make them stand out more. We will look at this by filtering out the data set to have only songs at the first position in the chart.
+
+For the top songs, there are positive words in common to all songs such as "love", "loving", "trust" and "woo". However, we also see some more specific and more positive words such as "happier", "perfect", "perfectly", and "glitter". On the negative side, they also use profanity such as "shit" and "hell". "shimmer" seems to be considered negative in bing lexicon but the word's definition does not exactly coincide so we will not consider it. It is interesting, however, that the negative words are also more specific and deeper such as "drowning" and "cold".
+
+```{r}
+top_songs_afinn <- songs_en_filtered %>%
+  filter(position == 1) %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  count(word, value, sort = TRUE) %>% 
+  mutate(sentiment = case_when(
+    value < 0 ~ "negative",
+    value > 0 ~ "positive",
+    TRUE ~ "neutral"
+  ))
+
+ggplot(top_songs_afinn) +
+  geom_col(aes(reorder(word,n), n, fill = sentiment)) +
+  coord_flip() +
+  facet_wrap(~sentiment, scales = "free_y") +
+  xlab("word") +
+  ylab("frequency")
+```
+
+Using afinn lexicon, we further see that the negative words used in the top songs carry more criticism with words like "faking" or "fake". We also see very emotional theme with "empty", "lost", "broken", and "cheated".
+
+For now, it is still unclear what topics that the songs sing about. We have only seen that these songs seem more emotional and use less profanity to express the bad feelings while using more specific words to describe good feelings. We will later on examine the context of songs better with term frequency and n-gram analysis.
+
+## Top Artists
+
+We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
+
+```{r}
+#make a data frame of top 10 artists (with most songs in the charts) of the period
+artists_sa <- bind_rows(
+  sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
+  sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
+) %>%
+  group_by(method, artists) %>% 
+  mutate(total_songs = sum(n)) %>% 
+  group_by(method) %>% 
+  slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
+
+#visualise  
+artists_sa %>% ggplot() +
+  geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
+  coord_flip() +
+  facet_wrap(~method, scales = "free_y") +
+  xlab("Top artists") +
+  ylab("number of songs")
+```
+
+Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
+
+## Bonus: Most positive vs most negative songs
 
 ```{r}
 #most positive songs from each year
@@ -407,32 +480,6 @@ songs_en_filtered %>%
 ```
 
 The negative songs, on the other hands, portray a very vague story with their most frequent words. Most of these words are swear words and carry little meaning by themselves. "Blueberry Faygo" is the only song of the 5 that has high diversity of top words and sequentially gives us more information about the song's topics. With words like "shooting", "poured", "millions", and named entities "draco" and "blueberry faygo", it is probably that the songs sings about living this certain kind of lifestyle with "draco" as an important figure, perhaps one of the singers or producers of the song, and "blueberry faygo" as a metaphor for certain thing about this lifestyle. Like stated previously, it is conceivably better to analyse these songs by pair or word groups to understand more what the topic or message of these songs is.
-
-## Top Artists
-
-We have seen that some artists can go very negative or positive in their song writing. We have also seen before that negative songs seem to dominate in popularity in the pop charts. Does this suggest that an artist might have a better chance at getting more songs in the top positions by choosing more negative songs? We can probe this hypothesis by looking at the top artists, ones that had the most songs placed in these top 100 boards, and check their ratio of positive versus negative songs.
-
-```{r}
-#make a data frame of top 10 artists (with most songs in the charts) of the period
-artists_sa <- bind_rows(
-  sa_df_afinn %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "afinn"),
-  sa_df_bing %>% group_by(artists) %>% count(label = sentiment_label) %>% mutate(method = "bing")
-) %>%
-  group_by(method, artists) %>% 
-  mutate(total_songs = sum(n)) %>% 
-  group_by(method) %>% 
-  slice_max(n=20, order_by = total_songs, with_ties = TRUE) 
-
-#visualise  
-artists_sa %>% ggplot() +
-  geom_col(aes(reorder(artists, total_songs), n, fill = label)) +
-  coord_flip() +
-  facet_wrap(~method, scales = "free_y") +
-  xlab("Top artists") +
-  ylab("number of songs")
-```
-
-Using "afinn" and "bing" gives us different results. However, the common pattern is clear. Most of these top artists had a favorite pick of negative songs. "Luke Combs", "Ariana Grande", and "Post Malone" are the few that made their fame by singing more positive songs, according to "afinn". However, the messages of their songs might not so much be negative in reality if taken into account the context of the whole song. The results here only indicate that the words employed in those songs are defined to carry negative notions by the lexicons. An educated guess could be that their lyrics contain a lot of profanity, which is very much normalized in pop culture. We will next examine on a deeper level of the words used and related word statistics to detect important words.
 
 # Term Frequency Analysis
 
@@ -522,7 +569,7 @@ After weeding out the vocal sounds, we can see that there are some common themes
 
 ```{r}
 #add more words and sounds that do not have semantic meaning
-vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm")
+vocal_sounds_extended <- c(vocal_sounds, "blrrrd", "o","tu", "bo", "teh", "yuh", "lo", "ough", "eno", "sha", "taki", "que", "grrah", "ma", "dum", "onely", "nah", "ee", "p", "ba", "ahh", "mhm", "ayy", "uh", "huh", "woo", "mmm", "mm", "bop", "yeah")
 
 #some songs are in the top charts for several years and tf-idf do not work with group() so we will create a function to do this per year
 map_tf_idf <- function(y) {
@@ -566,3 +613,215 @@ songs_tf_idf %>%
   facet_wrap(~year, scale = "free") +
   labs(x = "tf-idf", y = NULL)
 ```
+
+From the sentiment analysis, we learned that the top songs stand out by employing more specific and emotional words. We can learn more about their objects of attention by looking at the top tf-idf values of each song.
+
+The top song in 2019 seems to sing about riding horses on an old town road. This is probably metaphorical for something else, which we can explore later by looking at pairs and groups of words. The song also contains words like "nothing" and "nobody" so there is a possibility that the song means to sing about the state of being alone or different from the rest. Connecting with the previous context on an old town road, perhaps, the singer implies about how they are different now than the people of the place they are from.
+
+Next, in 2020, it seems to be more of a sad song through words like "blinded", "empty", and "drowning". Probable context for "blinded" is "blinded" by the "city's" "lights". Words such as "empty", "drowning", "sleep", "trust" and "touch" could imply a romantic or sensual affair that turned stale.
+
+The top song in 2021 seems, however, to be a more energetic, fun, and positive song with words such as "levitating", "dance", and "blast". Overall, the song seems to simply convey a message about enjoying the "night" "tonight" with "moonlight" and the song connects directly with the listeners by the use of "you're" and invites them on the journey with words like "ride", "fly" and "away".
+
+2022's top song seems to have a summer vibe with top words being "heat", "waves", "june". It is not, however, about enjoying the summer because the words are quite intense and bear some discomforting feelings. The song also sings about "middle" and "nights" where the singer might "sometimes" "think" "about" something and have a "vision".
+
+Finally, 2023 was topped by a seemingly sad song about romance. There is a clear narrative of at least 2 people involved as the song uses a lot of "we" and "our". There is also verbal exchange with words like "telling" and "said". Nostalgia is also a topic of the song with "remember" and this seems to be invoked through "liquor".
+
+# N-grams
+
+We have explored the sentimental and possible themes of the top songs from 2019 to 2023 but the story they tell is still a bit hazy. Pop songs are full of metaphors and employ words in artful ways that cannot be simply deciphered by looking at individual words. In this section, we will look at words of the lyrics in pairs and groups and try to connect them in order to get a fuller picture of the songs. We will first look at pairs of words and the look at groups of 3 words to try to understand better what the songs are singing about.
+
+## Bigram
+
+### Preparing data
+
+```{r}
+song_bigram <- songs_cleaned %>%
+  select(-lang) %>% 
+  #nest back clean dataframe to avoid correcting the spelling again
+  nest(lyrics = word) %>% 
+  #nest gives a list of list so we have to unlist them
+  mutate(lyrics = map(lyrics, unlist),
+         lyrics = unlist(lapply(lyrics, paste, collapse = " "))) %>% 
+  #unnesting to bigrams 
+  unnest_tokens(bigram, lyrics, token = "ngrams", n = 2)
+
+song_bigram %>% 
+  count(bigram, sort = TRUE)
+```
+
+First to convert words into pairs, we will stitch back the cleaned data frame with individuals words into a data frame with each row representing each column. This is because during the cleaning process, we corrected the spelling of many words and then tokenized the data set. If we were to use the original, uncleaned data set we would have to go through the cleaning process again. Therefore, here the cleaned data frame is stitched back and unraveled into pairs of words, or bigrams.
+
+Looking at the counts, we can see that there are many bigrams that are made up of stop words and vocal sounds that do not contribute much meaning to the songs. Therefore, we will filter them out.
+
+```{r}
+bigram_seperated <- song_bigram %>% 
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigram_filtered <- bigram_seperated %>% 
+  #filter stop words
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>% 
+  #filter vocal sounds
+  filter(!word1 %in% vocal_sounds_extended) %>% 
+  filter(!word2 %in% vocal_sounds_extended)
+
+bigram_united <- bigram_filtered %>% 
+  unite(bigram, word1, word2, sep = " ")
+
+bigram_united
+```
+
+Above, we first separate the bigrams into 2 columns of individual words. We then filtered for each columns of rows that contained the stop words and vocal sounds from the list we created before. We then united the words together to have a final data frame similar to the original but with less meaning less bigrams. Now we can explore better the context of the songs.
+
+```{r}
+bigram_united %>% 
+  group_by(year) %>% 
+  count(bigram, sort = T) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(bigram, n))) +
+  geom_col() +
+  facet_wrap(~year, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+It seems that for all the years, slang and profanity are frequently present. We can also see why when we performed sentiment analysis, there was a lot of negativity in the songs but in the actual reality and culture that might not be the case. For example, the word "bitch" carries a negative connotation but when paired with "bad", it might not necessarily mean "bad" but rather have a more positive connotation culturally speaking. Overall, there are still many common pairs that do not paint the full meaning of the songs so we will use tf-idf in order to take them out and shift the focus to more relevant words.
+
+### TF-IDF
+
+```{r}
+bigram_tf_idf <- bigram_united %>%
+  count(year, bigram) %>%
+  bind_tf_idf(bigram, year, n) %>%
+  arrange(desc(tf_idf))
+
+bigram_tf_idf %>% 
+  group_by(year) %>% 
+  slice_max(tf_idf, n = 10) %>% 
+  ggplot() +
+  geom_col(aes(tf_idf, reorder(bigram, tf_idf))) +
+  facet_wrap(~year, scale = "free_y")
+```
+
+Looking at bigram frequency, we can see some themes similar to the term frequency analysis starting to emerge. Bigrams like "girlfriend girlfriend", " girl summer", "roxanne roxanne", "woman woman", and "broadway girls" indicate that female is a relevant topic for the recent years. Spiritual or religious matter is also important as word pairs like "god's country", " talking god", and " god makes" show up in the charts. It is interesting that in 2021, there are 2 bigrams related to god. Like previously mentioned, the world had just witnessed the havoc of the pandemic, thus, it could be a reason why people are listening to songs related to their faith. We can also see that in 2019, before the pandemic, songs stand out with words talking more about enjoying life and having fun from bigrams such as "whiskey glasses", "girl summer", and "taste tequila". In 2020, there are not many of similar words but rather a new emergence of more sentimental words such as "memories bring" and "feeling feeling". In 2021 and 2022, however, they come back with words like "shaking ass", "knees shaking", and "sigue bailando" (keep dancing).
+
+In order to understand better the relationship and connections of these words, we will map them out into a network and identify clusters that characterize the recent years in music lyrics.
+
+### Graph
+
+```{r}
+set.seed(507)
+
+bigram_count <- bigram_filtered %>%
+  count(word1, word2 , sort = TRUE)
+
+#prepare graph  
+bigram_for_graph <- bigram_count %>%
+    filter(n > 8) %>%
+    graph_from_data_frame()
+
+#visualise graph
+ggraph(bigram_for_graph, layout = "fr") +
+    geom_edge_link(aes(edge_alpha = n, edge_width = "1px"), show.legend = FALSE) +
+    geom_node_point() +
+    geom_node_text(aes(label = name), vjust = 1.5, hjust = 0)
+```
+
+From mapping out the connections and relationships of words, we can see a few clusters that could well represent the trending topics in the recent year.
+
+First, there is a cluster around the word "wanna". So, it is common to sing about desires. The word "wanna" also has the strongest connection with the word "feel", which shows that desire for sentiment is possibly most frequent. There is also a cluster around the word "about", the connections are with "thinking", "talking", and "worried". Although they are words that frequently pair with the preposition "about", it is interesting to point out that "thinking" has the highest connection with "about". This closely relates to the theme of desire that we saw before.
+
+There is a dense cluster around the words "bad" and "bitch". Their neighbors are "bitches", "guy", "habits", "lil", and "ass". We discussed before that there is a trending attitude in the pop culture of being a "bad bitch", this cluster seems to confirm this phenomenon with other similar pairs of "bad" and "bitches", "real" and "ass" and "bitch".
+
+We also see a smaller cluster around "love". It is, however, surrounded by more negative words namely "ruin", "savage", and "lies". There is also another small cluster related to this topic formed by the words "heart", "broken", and "cold". We already learned that romance or love is a common topic. Here, we get a more specific picture of how love is sung about, which is more on the sorrow side. It seems that in the recent years, sad love songs are more dominant than happy ones.
+
+The cluster around "girl" also has some interesting connection. "Hot girl summer" was a trending term on social media and it is also present here. The song(s) containing these words perhaps helped popularized it. "baby" is also a prominent word pair for "girl", which is normal as it is a quite common way that some men address at girls. "freaky", however, also seems a strong connection with "girl". Although this might not be direct sexualization but it could be so implicitly. This is a topic that has a long run in history and it seems to persist in the modern day.
+
+Finally, Christmas seems to be many's favorite as we can see some clusters of the relevant words such as "holly", "jolly", "christmas", and "tree", and "jingle", "bell", and "rock". We have picked up this idea before with tf-idf analysis and saw that this seems to have surged in popularity after 2022.
+
+## Trigram
+
+```{r}
+song_trigram <- songs_cleaned %>%
+  select(-lang) %>% 
+  #nest back clean dataframe to avoid correcting the spelling again
+  nest(lyrics = word) %>% 
+  #nest gives a list of list so we have to unlist them
+  mutate(lyrics = map(lyrics, unlist),
+         lyrics = unlist(lapply(lyrics, paste, collapse = " "))) %>% 
+  #unnesting to bigrams 
+  unnest_tokens(trigram, lyrics, token = "ngrams", n = 3)
+
+song_trigram %>% 
+  count(trigram, sort = TRUE)
+```
+
+Bigram has given us a better context about the songs and shown the story of each year as well as all the years. We can extend the analysis by looking at groups of 3 words, or trigrams, to further understand the context and identify some popular terms being used. The preparation is similar to making bigrams. The cleaned data frame of songs with individual words are stitched back together then re-unraveled into trigrams. From the trigram count, we still need to clean out the vocal sounds to obtain word groups that have meaning.
+
+```{r}
+trigram_seperated <- song_trigram %>% 
+  separate(trigram, c("word1", "word2", "word3"), sep = " ")
+
+trigram_filtered <- trigram_seperated %>% 
+  #filter stop words
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>% 
+  filter(!word3 %in% stop_words$word) %>% 
+  #filter vocal sounds
+  filter(!word1 %in% vocal_sounds_extended) %>% 
+  filter(!word2 %in% vocal_sounds_extended) %>% 
+  filter(!word3 %in% vocal_sounds_extended) %>% 
+  filter(word1!=word2 & word2!=word3 & word1!=word3)
+
+trigram_united <- trigram_filtered %>% 
+  unite(trigram, word1, word2, word3, sep = " ")
+
+trigram_united %>% 
+  group_by(year) %>% 
+  count(trigram, sort = T) %>% 
+  slice_max(n, n = 10) %>%
+  ungroup() %>% 
+  ggplot(aes(n, reorder(trigram, n))) +
+  geom_col() +
+  facet_wrap(~year, scales = "free_y") +
+  xlab("frequency") +
+  ylab("word")
+```
+
+After filtering out stop words and vocal sounds, we still got many groups of repeating singular word (e.g., "woman woman woman") or repeating pairs (e.g., "jingle bell jingle" from "jingle bell jingle bell"). These groups are extraneous since we examined them in term frequency analysis and bigram analysis. Therefore, we will exclude them and look at groups of different words that might be more interesting for the analysis. The exclusion was done by filtering out rows that have word 1 equal to word 2, word 2 equal to word 3, and word 1 equal to word 3.
+
+In 2019, it seems that some songs with spanish lyrics gained popularity as we see groups of Spanish words. We can also see that the term "hot girl summer" probably started to rise rapidly in popularity from this year. This term seems to be followed up by another song using the term "hot girl bummer" in response in 2020. It also seems that "god" was not exactly used in a context of faith but something else related to drinking as we see the terms "beer talking god", "drinking beer talking", and "talking god amen". Finally, we again see the Christmas terms "holly jolly christmas" rising in 2022 and 2023.
+
+```{r}
+trigram_tf_idf <- trigram_united %>%
+  count(year, trigram) %>%
+  bind_tf_idf(trigram, year, n) %>%
+  arrange(desc(tf_idf))
+
+trigram_tf_idf %>% 
+  group_by(year) %>% 
+  slice_max(tf_idf, n = 10) %>% 
+  ggplot() +
+  geom_col(aes(tf_idf, reorder(trigram, tf_idf))) +
+  facet_wrap(~year, scale = "free_y")
+```
+
+Using tf-idf, we obtain similar results with just the term frequency. These word groups seem to be relevant and distinct for each year.
+
+## Top songs
+
+```{r}
+bigram_united %>% 
+  filter(position == 1) %>% 
+  count(year, bigram) %>%
+  bind_tf_idf(bigram, year, n) %>%
+  arrange(desc(tf_idf)) %>% 
+  ggplot() +
+  geom_col(aes(tf_idf, reorder(bigram, tf_idf))) +
+  facet_wrap(~year, scale = "free_y")
+```
+
+Looking at individual words have already given us a big context of the top most popular songs of 2019 to 2023. We can drill deeper into in what context are the words used so we can check whether the interpretation we made previously was adequate.
+
+It seems that the context of the word use was interpreted correctly. The song in 2019 main line seems to be riding horse on an old town road. The other pairs do not exactly give us more information about the idea of the songs but do show us there is a theme around old town and cowboy in the song. The bigrams of the top song in 2020 confirms that there is a sensual notation with pairs such as "touch baby", "overdrive baby", and "sin city's". 2021's song of the year is affirmatively energetic and uplifting. There are a lot of sparks with pairs like "life glitter" , "sky glitter", and "eyes shining". Meanwhile, 2022's song conveys a suffocating feeling with "heat waves", "late nights", "gonna lose", and "fake water". Lastly, the top song of 2023 has some connected bigrams such as "baby something's" and "something's telling", and "talking bout" and "bout life". The other pairs seem to confirm that the song meant to sing to a lover about life in a night setting which was induced by alcohol.
