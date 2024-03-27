@@ -20,7 +20,6 @@ In this analysis, we will analyse lyrics from the top popular songs from 2019 to
 if (!require(tidyverse)) install.packages("tidyverse")
 if (!require(rvest)) install.packages("rvest") #for scraping data from static web pages
 if (!require(xml2)) install.packages("xml2") #for reading html files of the web pages
-if (!require(geniusr)) remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
 if (!require(cld3)) install.packages("cld3") #for detecting language
 if (!require(tidytext)) install.packages("tidytext")
 if (!require(hunspell)) install.packages("hunspell") #detect misspelling
@@ -34,7 +33,6 @@ if (!require(topicmodels)) install.packages("topicmodels") #topic modelling
 library(tidyverse) 
 library(rvest) 
 library(xml2) 
-library(geniusr) 
 library(tidytext)
 library(hunspell)
 library(ggpubr)
@@ -48,6 +46,8 @@ Note: the package `geniusr` is an R package for using Genius API. The package is
 # Data Collection
 
 The Billboard Year End Hot 100 singles compiles the top performing singles of the United States based on both physical and digital sales. Although the charts are posted on the website of Billboard, in this analysis, we are getting the data from Wikipedia since it has a much better format for scraping the data and it is open-source. We begin the data collection process by making a test scrape for the year 2023.
+
+**Important**: the lyrics collection process takes a lot of time (around 30 min). The data set is already provided and this section can be skipped to Data Cleaning.
 
 ## Test Scrape 2023
 
@@ -107,32 +107,38 @@ The final data frame has 500 rows, which is in accordant to 5 charts of the 5 ye
 
 The full guide to the `geniusr` package is on this [GitHub page](https://github.com/ewenme/geniusr?tab=readme-ov-file)
 
+Again, the data set is already provided but for reproduction of the data collection process, un-comment the code lines and run.
+
 ## Get Lyrics
 
 ```{r}
-genius_token() #call and enter Client Access Token to authenticate to use Genius API 
+# if (!require(geniusr)) remotes::install_github("giovanni-cutri/geniusr") #api of genius website - contains lyrics and many information about songs and artists
+# library(geniusr)
+
+# #call and enter Client Access Token to authenticate to use Genius API
+# genius_token()  
 ```
 
 ```{r}
-#helper function to get lyrics of a song
-just_lyrics <- function(artist, song){
-  #search for id of song based on song name and name of first artist
-  id <- search_song(paste(song, str_extract(artist, "\\w+( [A-Z]\\w+)?")))[1,1] %>% pull()
-  
-  #get lyrics based on id
-  get_lyrics_id(id) %>% 
-    .$line %>% 
-    paste(., collapse= " ")
-}
-
-#add lyrics column to the data frame of songs from before
-all_songs_lyrics <- all_top_songs %>% 
-  mutate(
-    lyrics = mapply(just_lyrics, artists, song_name)
-  )
-
-#save the complete data frame into a csv file for easy retrival for analysis later
-write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
+# # helper function to get lyrics of a song
+# just_lyrics <- function(artist, song){
+#   #search for id of song based on song name and name of first artist
+#   id <- search_song(paste(song, str_extract(artist, "\\w+( [A-Z]\\w+)?")))[1,1] %>% pull()
+#   
+#   #get lyrics based on id
+#   get_lyrics_id(id) %>% 
+#     .$line %>% 
+#     paste(., collapse= " ")
+# }
+# 
+# #add lyrics column to the data frame of songs from before
+# all_songs_lyrics <- all_top_songs %>% 
+#   mutate(
+#     lyrics = mapply(just_lyrics, artists, song_name)
+#   )
+# 
+# #save the complete data frame into a csv file for easy retrival for analysis later
+# write_csv(all_songs_lyrics, "all_top_songs_lyrics.csv")
 ```
 
 One way to get lyrics of a song using the `geniusr` package is to use the function `get_lyrics_id()` with a singular parameter `id` . This `id` can be retrieved by using the function `search_song` and the resulting table's first cell ([1,1]) is the id of the song. We built a helper function to facilitate the lyrics retrieval.
